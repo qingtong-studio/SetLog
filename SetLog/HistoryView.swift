@@ -3,6 +3,8 @@ import SwiftData
 
 struct HistoryView: View {
     @State private var searchText = ""
+    @State private var sortMode: HistorySortMode = .byDate
+    @Query private var preferences: [AppPreferences]
     @Query(
         filter: #Predicate<WorkoutSession> { $0.isCompleted == true },
         sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]
@@ -12,6 +14,10 @@ struct HistoryView: View {
 
     init(onOpenDetail: @escaping (UUID) -> Void = { _ in }) {
         self.onOpenDetail = onOpenDetail
+    }
+
+    private var weightUnit: WeightUnit {
+        preferences.first?.weightUnit ?? .kilogram
     }
 
     var body: some View {
@@ -42,32 +48,31 @@ struct HistoryView: View {
     }
 
     private var groupedSessions: [(title: String, sessions: [WorkoutSession])] {
-        let grouped = Dictionary(grouping: filteredSessions) { session in
+        let grouped = Dictionary(grouping: sortedFilteredSessions) { session in
             let components = Calendar.current.dateComponents([.year, .month], from: session.dateStarted)
             return "\(components.year ?? 0)年\(components.month ?? 0)月"
         }
 
         return grouped
-            .map { (title: $0.key, sessions: $0.value.sorted(by: { $0.dateStarted > $1.dateStarted })) }
+            .map { (title: $0.key, sessions: $0.value) }
             .sorted { lhs, rhs in
                 lhs.sessions.first?.dateStarted ?? .distantPast > rhs.sessions.first?.dateStarted ?? .distantPast
             }
     }
 
-    private var topBar: some View {
-        ZStack {
-            Text("历史记录")
-                .font(.system(size: 18, weight: .semibold))
-
-            HStack {
-                Spacer()
-                Button(action: {}) {
-                    Image(systemName: "magnifyingglass")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.primary)
-                }
-            }
+    private var sortedFilteredSessions: [WorkoutSession] {
+        switch sortMode {
+        case .byDate:
+            return filteredSessions.sorted(by: { $0.dateStarted > $1.dateStarted })
+        case .byVolume:
+            return filteredSessions.sorted(by: { $0.totalVolumeKg > $1.totalVolumeKg })
         }
+    }
+
+    private var topBar: some View {
+        Text("历史记录")
+            .font(.system(size: 18, weight: .semibold))
+            .frame(maxWidth: .infinity)
     }
 
     private var searchBar: some View {
@@ -85,7 +90,14 @@ struct HistoryView: View {
             .background(Color(.systemGray5).opacity(0.35))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-            Button(action: {}) {
+            Menu {
+                Button("按时间排序") {
+                    sortMode = .byDate
+                }
+                Button("按容量排序") {
+                    sortMode = .byVolume
+                }
+            } label: {
                 Image(systemName: "line.3.horizontal.decrease")
                     .font(.system(size: 15, weight: .semibold))
                     .foregroundStyle(.primary)
@@ -119,7 +131,7 @@ struct HistoryView: View {
                             Button(action: {
                                 onOpenDetail(item.id)
                             }) {
-                                HistoryRecordCard(session: item)
+                                HistoryRecordCard(session: item, weightUnit: weightUnit)
                             }
                             .buttonStyle(.plain)
                         }
@@ -142,12 +154,18 @@ struct HistoryView: View {
     }
 
     private func volumeText(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) kg"
+        value.formattedVolume(unit: weightUnit)
     }
+}
+
+private enum HistorySortMode {
+    case byDate
+    case byVolume
 }
 
 private struct HistoryRecordCard: View {
     let session: WorkoutSession
+    let weightUnit: WeightUnit
 
     var body: some View {
         HStack(spacing: 12) {
@@ -188,7 +206,7 @@ private struct HistoryRecordCard: View {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 4) {
-                Text("\(session.totalVolumeKg.formatted(.number.precision(.fractionLength(0)))) kg")
+                Text(session.totalVolumeKg.formattedVolume(unit: weightUnit))
                     .font(.system(size: 19, weight: .bold))
 
                 Text("\(session.orderedExercises.count) 个动作")

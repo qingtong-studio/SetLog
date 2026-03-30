@@ -7,6 +7,34 @@ enum WeightUnit: String, Codable, CaseIterable {
 }
 
 @Model
+final class AppPreferences {
+    var weightUnitRawValue: String
+    var notificationsEnabled: Bool
+    var createdAt: Date
+    var updatedAt: Date
+
+    init(
+        weightUnit: WeightUnit = .kilogram,
+        notificationsEnabled: Bool = true,
+        createdAt: Date = .now,
+        updatedAt: Date = .now
+    ) {
+        self.weightUnitRawValue = weightUnit.rawValue
+        self.notificationsEnabled = notificationsEnabled
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+    }
+
+    var weightUnit: WeightUnit {
+        get { WeightUnit(rawValue: weightUnitRawValue) ?? .kilogram }
+        set {
+            weightUnitRawValue = newValue.rawValue
+            updatedAt = .now
+        }
+    }
+}
+
+@Model
 final class WorkoutSession {
     var id: UUID
     var title: String
@@ -366,6 +394,55 @@ extension WorkoutSet {
 
     var completedRestDisplay: String {
         canEditRecordedRest ? "\(recordedRestSeconds ?? 0)" : "-"
+    }
+
+    func weightDisplay(unit: WeightUnit) -> String {
+        weightKg.formattedWeight(unit: unit)
+    }
+}
+
+extension Double {
+    private static let poundsPerKilogram = 2.20462
+
+    func convertedWeight(from sourceUnit: WeightUnit, to targetUnit: WeightUnit) -> Double {
+        guard sourceUnit != targetUnit else {
+            return self
+        }
+
+        switch (sourceUnit, targetUnit) {
+        case (.kilogram, .pound):
+            return self * Self.poundsPerKilogram
+        case (.pound, .kilogram):
+            return self / Self.poundsPerKilogram
+        default:
+            return self
+        }
+    }
+
+    func formattedWeight(unit: WeightUnit, fractionDigits: Int = 1) -> String {
+        let convertedValue = convertedWeight(from: .kilogram, to: unit)
+        let roundedValue = convertedValue.rounded()
+        if abs(convertedValue - roundedValue) < 0.05 {
+            return "\(Int(roundedValue))"
+        }
+
+        return convertedValue.formatted(.number.precision(.fractionLength(0...fractionDigits)))
+    }
+
+    func formattedWeightWithUnit(unit: WeightUnit, fractionDigits: Int = 1) -> String {
+        "\(formattedWeight(unit: unit, fractionDigits: fractionDigits)) \(unit.displaySymbol)"
+    }
+
+    func formattedVolume(unit: WeightUnit) -> String {
+        let convertedValue = convertedWeight(from: .kilogram, to: unit)
+        let formattedValue = convertedValue.formatted(.number.precision(.fractionLength(0)))
+        return "\(formattedValue) \(unit.displaySymbol.lowercased())"
+    }
+}
+
+extension WeightUnit {
+    var displaySymbol: String {
+        rawValue
     }
 }
 

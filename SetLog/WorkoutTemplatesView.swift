@@ -5,17 +5,28 @@
 //  Created by toka on 2026/03/13.
 //
 
+import SwiftData
 import SwiftUI
 
 struct WorkoutTemplatesView: View {
     @State private var selectedCategory = "全部"
+    @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var templates: [WorkoutTemplate]
 
-    private let categories = ["全部", "力量", "减脂", "塑形", "居家"]
-    private let templates = WorkoutTemplateCardData.mockData
-    let onApplyTemplate: () -> Void
+    let onApplyTemplate: (WorkoutTemplate) -> Void
 
-    init(onApplyTemplate: @escaping () -> Void = {}) {
+    init(onApplyTemplate: @escaping (WorkoutTemplate) -> Void = { _ in }) {
         self.onApplyTemplate = onApplyTemplate
+    }
+
+    private var categories: [String] {
+        let dynamicCategories = Set(templates.map(\.category)).sorted()
+        return ["全部"] + dynamicCategories
+    }
+
+    private var filteredTemplates: [WorkoutTemplate] {
+        templates.filter { template in
+            selectedCategory == "全部" || template.category == selectedCategory
+        }
     }
 
     var body: some View {
@@ -39,22 +50,11 @@ struct WorkoutTemplatesView: View {
     }
 
     private var topBar: some View {
-        ZStack {
-            Text("训练模板")
-                .font(.system(size: 18, weight: .semibold))
-
-            HStack {
-                Spacer()
-                Button(action: {}) {
-                    Image(systemName: "square.grid.2x2")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
-        }
-        .padding(.horizontal, 16)
-        .frame(height: 56)
-        .background(.white)
+        Text("训练模板")
+            .font(.system(size: 18, weight: .semibold))
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(.white)
     }
 
     private var discoverHeader: some View {
@@ -89,10 +89,36 @@ struct WorkoutTemplatesView: View {
 
     private var templateList: some View {
         VStack(spacing: 14) {
-            ForEach(templates) { template in
-                WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
+            if filteredTemplates.isEmpty {
+                noTemplateState
+            } else {
+                ForEach(filteredTemplates) { template in
+                    WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
+                }
             }
         }
+    }
+
+    private var noTemplateState: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "square.stack.3d.up")
+                .font(.system(size: 24, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text("暂无模板")
+                .font(.system(size: 15, weight: .semibold))
+            Text("先在训练中沉淀几次动作组合，再整理成模板。")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.vertical, 24)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
     }
 
     private var createTemplateCard: some View {
@@ -101,10 +127,10 @@ struct WorkoutTemplatesView: View {
                 .font(.system(size: 22, weight: .medium))
                 .foregroundStyle(Color(.systemGray3))
 
-            Text("自定义新模板")
+            Text("模板创建入口")
                 .font(.system(size: 18, weight: .bold))
 
-            Text("创建属于你的专属训练序列")
+            Text("下一步会开放自定义新模板")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
         }
@@ -121,8 +147,17 @@ struct WorkoutTemplatesView: View {
 }
 
 private struct WorkoutTemplateCard: View {
-    let template: WorkoutTemplateCardData
-    let onApply: () -> Void
+    let template: WorkoutTemplate
+    let onApply: (WorkoutTemplate) -> Void
+
+    private var orderedExercises: [TemplateExercise] {
+        template.exercises.sorted { $0.order < $1.order }
+    }
+
+    private var exerciseSymbols: [String] {
+        let symbols = orderedExercises.prefix(4).map(\.symbolName)
+        return symbols.isEmpty ? ["figure.strengthtraining.traditional"] : symbols
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -132,7 +167,7 @@ private struct WorkoutTemplateCard: View {
                         .font(.system(size: 24, weight: .bold))
 
                     HStack(spacing: 10) {
-                        Label(template.duration, systemImage: "clock")
+                        Label("\(template.estimatedDuration) 分钟", systemImage: "clock")
                         Label(template.level, systemImage: "flame")
                     }
                     .font(.system(size: 12, weight: .medium))
@@ -147,7 +182,7 @@ private struct WorkoutTemplateCard: View {
             }
 
             HStack(spacing: 10) {
-                ForEach(template.exerciseSymbols, id: \.self) { symbol in
+                ForEach(exerciseSymbols, id: \.self) { symbol in
                     Image(systemName: symbol)
                         .font(.system(size: 15, weight: .medium))
                         .foregroundStyle(.secondary)
@@ -158,7 +193,7 @@ private struct WorkoutTemplateCard: View {
 
                 Spacer()
 
-                Text(template.tag)
+                Text(template.category)
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(.secondary)
                     .padding(.horizontal, 10)
@@ -167,7 +202,9 @@ private struct WorkoutTemplateCard: View {
                     .clipShape(Capsule())
             }
 
-            Button(action: onApply) {
+            Button(action: {
+                onApply(template)
+            }) {
                 HStack(spacing: 8) {
                     Image(systemName: "play")
                         .font(.system(size: 12, weight: .bold))
@@ -191,41 +228,32 @@ private struct WorkoutTemplateCard: View {
     }
 }
 
-private struct WorkoutTemplateCardData: Identifiable {
-    let id = UUID()
-    let title: String
-    let duration: String
-    let level: String
-    let exerciseSymbols: [String]
-    let tag: String
-
-    static let mockData: [WorkoutTemplateCardData] = [
-        WorkoutTemplateCardData(
-            title: "经典胸肌与肱三头肌训练",
-            duration: "65 分钟",
-            level: "进阶",
-            exerciseSymbols: ["figure.strengthtraining.traditional", "bolt.heart", "flame", "figure.cooldown"],
-            tag: "胸部"
-        ),
-        WorkoutTemplateCardData(
-            title: "硬核腿部轰炸 (Leg Day)",
-            duration: "75 分钟",
-            level: "专业",
-            exerciseSymbols: ["figure.strengthtraining.traditional", "figure.run", "figure.walk"],
-            tag: "股四头肌"
-        ),
-        WorkoutTemplateCardData(
-            title: "居家弹力带塑形",
-            duration: "30 分钟",
-            level: "入门",
-            exerciseSymbols: ["figure.mind.and.body", "figure.flexibility"],
-            tag: "全身"
-        )
-    ]
-}
-
 #Preview {
     NavigationStack {
         WorkoutTemplatesView()
+            .modelContainer(PreviewModelContainer.shared)
     }
+}
+
+private enum PreviewModelContainer {
+    static let shared: ModelContainer = {
+        let schema = Schema([
+            AppPreferences.self,
+            WorkoutSession.self,
+            WorkoutExercise.self,
+            WorkoutSet.self,
+            ExerciseCatalogItem.self,
+            WorkoutTemplate.self,
+            TemplateExercise.self
+        ])
+        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+
+        do {
+            let container = try ModelContainer(for: schema, configurations: [configuration])
+            try SampleDataSeeder.seedIfNeeded(in: container.mainContext)
+            return container
+        } catch {
+            fatalError("Failed to create preview container: \(error)")
+        }
+    }()
 }

@@ -5,33 +5,35 @@
 //  Created by toka on 2026/03/13.
 //
 
+import SwiftData
 import SwiftUI
 
 struct ProfileView: View {
-    @State private var notificationsEnabled = true
-    @State private var unit: ProfileWeightUnit = .kilogram
+    @Environment(\.modelContext) private var modelContext
+    @Query private var preferences: [AppPreferences]
+    @Query(sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]) private var sessions: [WorkoutSession]
 
-    private let profile = UserProfile.mock
+    private let accountState: AccountState = .guest
     private let regularSettings = SettingSection(
         title: "常规设置",
         rows: [
-            .segmented(title: "单位切换", subtitle: "重量显示单位", leadingIcon: "globe"),
+            .segmented(title: "单位切换", subtitle: "重量显示单位", leadingIcon: "scalemass"),
             .toggle(title: "消息通知", subtitle: "训练提醒与系统通知", leadingIcon: "bell", tint: .orange),
-            .navigation(title: "深色模式", subtitle: "深色模式和沉浸", leadingIcon: "moon", trailingText: "跟随系统")
+            .navigation(title: "显示模式", subtitle: "界面风格与系统外观", leadingIcon: "circle.lefthalf.filled", trailingText: "跟随系统")
         ]
     )
-    private let privacySettings = SettingSection(
-        title: "账号与隐私",
+    private let guestAccountSection = SettingSection(
+        title: "账号与同步",
         rows: [
-            .navigation(title: "隐私权限", subtitle: "管理你的权限", leadingIcon: "shield"),
-            .navigation(title: "账号安全", subtitle: "已绑定手机 138****8888", leadingIcon: "iphone")
+            .navigation(title: "登录与同步", subtitle: "登录后可同步训练记录与个人资料", leadingIcon: "person.badge.key", trailingText: "未登录"),
+            .navigation(title: "本机使用说明", subtitle: "未登录也可正常记录训练，数据仅保存在当前设备", leadingIcon: "internaldrive")
         ]
     )
     private let supportSettings = SettingSection(
         title: "支持与关于",
         rows: [
-            .navigation(title: "帮助中心", subtitle: nil, leadingIcon: "questionmark.circle"),
-            .navigation(title: "关于 Lift Log", subtitle: "当前版本 v2.4.0", leadingIcon: "info.circle")
+            .navigation(title: "帮助中心", subtitle: "常见问题与使用说明", leadingIcon: "questionmark.circle"),
+            .navigation(title: "关于 SetLog", subtitle: "当前版本 \(currentAppVersionText())", leadingIcon: "info.circle")
         ]
     )
 
@@ -39,11 +41,15 @@ struct ProfileView: View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 profileTopBar
-                profileCard
+                accountSummaryCard
+                localStatsCard
+                syncNoticeCard
                 settingsSection(regularSettings)
-                settingsSection(privacySettings)
+                settingsSection(guestAccountSection)
                 settingsSection(supportSettings)
-                logoutButton
+                if accountState == .signedIn {
+                    logoutButton
+                }
                 brandFooter
             }
             .padding(.horizontal, 16)
@@ -52,51 +58,89 @@ struct ProfileView: View {
         }
         .background(Color(.systemGray6))
         .navigationBarHidden(true)
-    }
-
-    private var profileTopBar: some View {
-        ZStack {
-            Text("个人中心")
-                .font(.system(size: 18, weight: .semibold))
-
-            HStack {
-                Spacer()
-                Button(action: {}) {
-                    Image(systemName: "gearshape")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
-            }
+        .onAppear {
+            ensurePreferences()
         }
     }
 
-    private var profileCard: some View {
+    private var appPreferences: AppPreferences? {
+        preferences.first
+    }
+
+    private var unitBinding: Binding<ProfileWeightUnit> {
+        Binding(
+            get: { ProfileWeightUnit(weightUnit: appPreferences?.weightUnit ?? .kilogram) },
+            set: { newValue in
+                ensurePreferences()
+                appPreferences?.weightUnit = newValue.weightUnit
+                try? modelContext.save()
+            }
+        )
+    }
+
+    private var notificationsBinding: Binding<Bool> {
+        Binding(
+            get: { appPreferences?.notificationsEnabled ?? true },
+            set: { newValue in
+                ensurePreferences()
+                appPreferences?.notificationsEnabled = newValue
+                appPreferences?.updatedAt = .now
+                try? modelContext.save()
+            }
+        )
+    }
+
+    private var completedSessions: [WorkoutSession] {
+        sessions.filter(\.isCompleted)
+    }
+
+    private var totalTrainingDays: Int {
+        Set(completedSessions.map { Calendar.current.startOfDay(for: $0.dateStarted) }).count
+    }
+
+    private var totalVolumeKg: Double {
+        completedSessions.reduce(0) { $0 + $1.totalVolumeKg }
+    }
+
+    private var totalCompletedSets: Int {
+        completedSessions.reduce(0) { $0 + $1.completedSetCount }
+    }
+
+    private var lastWorkoutText: String {
+        guard let lastDate = completedSessions.first?.dateStarted else {
+            return "还没有完成训练"
+        }
+
+        return lastDate.formatted(date: .abbreviated, time: .omitted)
+    }
+
+    private var accountSummaryCard: some View {
         VStack(alignment: .leading, spacing: 16) {
             HStack(alignment: .top, spacing: 12) {
                 ZStack {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Color.orange.opacity(0.9), Color.red.opacity(0.75)],
+                                colors: [Color.orange.opacity(0.95), Color(red: 0.96, green: 0.36, blue: 0.13)],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
                         )
-                    Image(systemName: "figure.strengthtraining.traditional")
-                        .font(.system(size: 30, weight: .semibold))
+                    Image(systemName: accountState.avatarSymbol)
+                        .font(.system(size: 28, weight: .semibold))
                         .foregroundStyle(.white)
                 }
-                .frame(width: 56, height: 56)
+                .frame(width: 58, height: 58)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(profile.name)
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(accountState.title)
                         .font(.system(size: 22, weight: .bold))
 
-                    Text(profile.bio)
+                    Text(accountState.subtitle)
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
 
-                    Text(profile.level)
+                    Text(accountState.badgeText)
                         .font(.system(size: 11, weight: .semibold))
                         .foregroundStyle(Color(red: 0.55, green: 0.47, blue: 0.22))
                         .padding(.horizontal, 10)
@@ -110,15 +154,70 @@ struct ProfileView: View {
 
             Divider()
 
-            HStack(spacing: 0) {
-                ForEach(profile.stats) { stat in
-                    ProfileStatView(stat: stat)
+            VStack(alignment: .leading, spacing: 10) {
+                Label("当前可直接使用训练、历史与设置功能", systemImage: "checkmark.circle")
+                Label("登录后再补同步、跨设备恢复与账号资料", systemImage: "icloud")
+            }
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(.secondary)
 
-                    if stat.id != profile.stats.last?.id {
-                        Divider()
-                            .frame(height: 42)
-                    }
-                }
+            HStack(spacing: 8) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 13, weight: .semibold))
+                Text("登录与同步功能开发中")
+                    .font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Text("即将上线")
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(.secondary)
+            }
+            .foregroundStyle(.primary)
+            .padding(.horizontal, 14)
+            .frame(height: 46)
+            .background(Color(.systemGray6))
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        }
+        .padding(16)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
+    }
+
+    private var localStatsCard: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack {
+                Text("本机训练数据")
+                    .font(.system(size: 16, weight: .bold))
+                Spacer()
+                Text("未登录")
+                    .font(.system(size: 11, weight: .semibold))
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 4)
+                    .background(Color(.systemGray6))
+                    .clipShape(Capsule())
+            }
+
+            HStack(spacing: 0) {
+                ProfileStatView(stat: ProfileStat(icon: "calendar", value: "\(totalTrainingDays)", unit: "天", title: "训练天数"))
+                Divider()
+                    .frame(height: 42)
+                ProfileStatView(stat: ProfileStat(icon: "scalemass", value: volumeText(totalVolumeKg), unit: nil, title: "累计容量"))
+                Divider()
+                    .frame(height: 42)
+                ProfileStatView(stat: ProfileStat(icon: "list.number", value: "\(totalCompletedSets)", unit: "组", title: "完成组数"))
+            }
+
+            HStack(spacing: 8) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 12, weight: .medium))
+                    .foregroundStyle(.secondary)
+                Text("最近一次完成训练：\(lastWorkoutText)")
+                    .font(.system(size: 12))
+                    .foregroundStyle(.secondary)
             }
         }
         .padding(16)
@@ -128,6 +227,31 @@ struct ProfileView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color(.systemGray5), lineWidth: 1)
         )
+    }
+
+    private var syncNoticeCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Label("未登录模式说明", systemImage: "lock.open")
+                .font(.system(size: 14, weight: .bold))
+
+            Text("当前训练记录、历史记录和设置均可正常使用，但数据只保存在这台设备上。后续接入账号系统后，可在这里完成登录并开启同步。")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
+    }
+
+    private var profileTopBar: some View {
+        Text("个人中心")
+            .font(.system(size: 18, weight: .semibold))
+            .frame(maxWidth: .infinity)
     }
 
     @ViewBuilder
@@ -141,8 +265,8 @@ struct ProfileView: View {
                 ForEach(section.rows) { row in
                     SettingRowView(
                         row: row,
-                        unit: $unit,
-                        notificationsEnabled: $notificationsEnabled
+                        unit: unitBinding,
+                        notificationsEnabled: notificationsBinding
                     )
 
                     if row.id != section.rows.last?.id {
@@ -161,24 +285,22 @@ struct ProfileView: View {
     }
 
     private var logoutButton: some View {
-        Button(action: {}) {
-            HStack(spacing: 10) {
-                Image(systemName: "rectangle.portrait.and.arrow.right")
-                    .foregroundStyle(.red)
-                Text("退出登录")
-                    .font(.system(size: 15, weight: .semibold))
-                    .foregroundStyle(.red)
-                Spacer()
-            }
-            .padding(.horizontal, 16)
-            .frame(height: 54)
-            .background(.white)
-            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color(.systemGray5), lineWidth: 1)
-            )
+        HStack(spacing: 10) {
+            Image(systemName: "rectangle.portrait.and.arrow.right")
+                .foregroundStyle(.red)
+            Text("退出登录")
+                .font(.system(size: 15, weight: .semibold))
+                .foregroundStyle(.red)
+            Spacer()
         }
+        .padding(.horizontal, 16)
+        .frame(height: 54)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
     }
 
     private var brandFooter: some View {
@@ -186,15 +308,28 @@ struct ProfileView: View {
             Image(systemName: "figure.strengthtraining.traditional")
                 .font(.system(size: 18))
                 .foregroundStyle(.secondary)
-            Text("LIFT LOG")
+            Text("SETLOG")
                 .font(.system(size: 12, weight: .bold))
                 .foregroundStyle(.secondary)
-            Text("Made with Passion for Gains")
+            Text("Guest mode supported. Sync comes later.")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, 10)
+    }
+
+    private func volumeText(_ value: Double) -> String {
+        value.formattedVolume(unit: appPreferences?.weightUnit ?? .kilogram)
+    }
+
+    private func ensurePreferences() {
+        guard preferences.isEmpty else {
+            return
+        }
+
+        modelContext.insert(AppPreferences())
+        try? modelContext.save()
     }
 }
 
@@ -210,9 +345,11 @@ private struct ProfileStatView: View {
                 .background(Color(.systemGray6))
                 .clipShape(Circle())
 
-            HStack(alignment: .lastTextBaseline, spacing: 1) {
+            HStack(alignment: .lastTextBaseline, spacing: 2) {
                 Text(stat.value)
-                    .font(.system(size: 20, weight: .bold))
+                    .font(.system(size: 18, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.75)
                 if let unit = stat.unit {
                     Text(unit)
                         .font(.system(size: 11, weight: .semibold))
@@ -282,26 +419,8 @@ private struct SettingRowView: View {
             }
         }
         .padding(.horizontal, 14)
-        .frame(height: 68)
+        .frame(minHeight: 68)
     }
-}
-
-private struct UserProfile {
-    let name: String
-    let bio: String
-    let level: String
-    let stats: [ProfileStat]
-
-    static let mock = UserProfile(
-        name: "健身达人·阿强",
-        bio: "每一块肌肉都是坚持的勋章",
-        level: "LV.12",
-        stats: [
-            ProfileStat(icon: "calendar", value: "128", unit: "次", title: "训练天数"),
-            ProfileStat(icon: "medal", value: "45.2", unit: "吨", title: "总训练量"),
-            ProfileStat(icon: "link", value: "2,840", unit: "组", title: "历史组数")
-        ]
-    )
 }
 
 private struct ProfileStat: Identifiable {
@@ -346,6 +465,61 @@ private struct SettingRow: Identifiable {
 private enum ProfileWeightUnit: String, CaseIterable {
     case kilogram = "KG"
     case pound = "LB"
+
+    init(weightUnit: WeightUnit) {
+        self = weightUnit == .kilogram ? .kilogram : .pound
+    }
+
+    var weightUnit: WeightUnit {
+        self == .kilogram ? .kilogram : .pound
+    }
+}
+
+private enum AccountState {
+    case guest
+    case signedIn
+
+    var title: String {
+        switch self {
+        case .guest:
+            return "未登录"
+        case .signedIn:
+            return "已登录"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .guest:
+            return "当前以本机模式使用。训练记录和设置可直接使用，后续可登录同步。"
+        case .signedIn:
+            return "账号数据已同步到云端。"
+        }
+    }
+
+    var badgeText: String {
+        switch self {
+        case .guest:
+            return "本机使用中"
+        case .signedIn:
+            return "已开启同步"
+        }
+    }
+
+    var avatarSymbol: String {
+        switch self {
+        case .guest:
+            return "person.crop.circle"
+        case .signedIn:
+            return "person.crop.circle.badge.checkmark"
+        }
+    }
+}
+
+private func currentAppVersionText() -> String {
+    let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
+    let buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
+    return "v\(shortVersion) (\(buildNumber))"
 }
 
 #Preview {

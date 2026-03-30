@@ -10,8 +10,9 @@ import SwiftData
 @testable import SetLog
 
 struct SetLogTests {
-    @Test func sampleDataSeederCreatesCatalogAndSessions() throws {
+    @MainActor @Test func sampleDataSeederCreatesCatalogAndSessions() throws {
         let schema = Schema([
+            AppPreferences.self,
             WorkoutSession.self,
             WorkoutExercise.self,
             WorkoutSet.self,

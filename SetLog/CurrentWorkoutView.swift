@@ -7,6 +7,7 @@ struct CurrentWorkoutView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
+    @Query private var preferences: [AppPreferences]
     @State private var isPresentingAddExercise = false
     @State private var now = Date.now
     @State private var focusedSetRowID: UUID?
@@ -28,6 +29,7 @@ struct CurrentWorkoutView: View {
                             ForEach(workout.orderedExercises) { exercise in
                                 ExerciseEditorCard(
                                     exercise: exercise,
+                                    weightUnit: weightUnit,
                                     onToggleSet: { set in
                                         toggle(set: set, in: workout)
                                     },
@@ -126,6 +128,10 @@ struct CurrentWorkoutView: View {
                 }
             }
         }
+    }
+
+    private var weightUnit: WeightUnit {
+        preferences.first?.weightUnit ?? .kilogram
     }
 
     private func stickyHeader(workout: WorkoutSession) -> some View {
@@ -350,8 +356,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func volumeText(_ value: Double) -> String {
-        let formatted = value.formatted(.number.precision(.fractionLength(0)))
-        return "\(formatted) kg"
+        value.formattedVolume(unit: weightUnit)
     }
 
     private func toggle(set: WorkoutSet, in workout: WorkoutSession) {
@@ -427,7 +432,7 @@ struct CurrentWorkoutView: View {
             return
         }
 
-        set.weightKg = parsedValue
+        set.weightKg = parsedValue.convertedWeight(from: weightUnit, to: .kilogram)
         workout?.updatedAt = now
         try? modelContext.save()
     }
@@ -611,6 +616,7 @@ struct CurrentWorkoutView: View {
 
 private struct ExerciseEditorCard: View {
     let exercise: WorkoutExercise
+    let weightUnit: WeightUnit
     let onToggleSet: (WorkoutSet) -> Void
     let onUpdateWeight: (WorkoutSet, String) -> Void
     let onUpdateReps: (WorkoutSet, String) -> Void
@@ -674,7 +680,7 @@ private struct ExerciseEditorCard: View {
                 .foregroundStyle(Color(red: 0.29, green: 0.32, blue: 0.38))
 
                 ForEach(exercise.orderedSets) { item in
-                    WorkoutSetRow(set: item) {
+                    WorkoutSetRow(set: item, weightUnit: weightUnit) {
                         onToggleSet(item)
                     } onUpdateWeight: { value in
                         onUpdateWeight(item, value)
@@ -766,6 +772,7 @@ private struct ExerciseEditorCard: View {
 
 private struct WorkoutSetRow: View {
     let set: WorkoutSet
+    let weightUnit: WeightUnit
     let onToggle: () -> Void
     let onUpdateWeight: (String) -> Void
     let onUpdateReps: (String) -> Void
@@ -781,7 +788,7 @@ private struct WorkoutSetRow: View {
                     .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
 
                 EditableInputCell(
-                    value: set.weightDisplay,
+                    value: set.weightDisplay(unit: weightUnit),
                     keyboardType: .decimalPad,
                     isEditable: true,
                     activeTextColor: Color(red: 0.14, green: 0.15, blue: 0.18),
@@ -1032,6 +1039,7 @@ private struct CurrentWorkoutPreviewHost: View {
 private enum PreviewModelContainer {
     static let shared: ModelContainer = {
         let schema = Schema([
+            AppPreferences.self,
             WorkoutSession.self,
             WorkoutExercise.self,
             WorkoutSet.self,

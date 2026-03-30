@@ -3,14 +3,21 @@ import SwiftData
 
 struct HistoryDetailView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query private var preferences: [AppPreferences]
     @Query private var sessions: [WorkoutSession]
+    let onStartFromHistory: (WorkoutSession) -> Void
 
-    init(sessionID: UUID) {
+    init(sessionID: UUID, onStartFromHistory: @escaping (WorkoutSession) -> Void = { _ in }) {
+        self.onStartFromHistory = onStartFromHistory
         _sessions = Query(
             filter: #Predicate<WorkoutSession> { session in
                 session.id == sessionID
             }
         )
+    }
+
+    private var weightUnit: WeightUnit {
+        preferences.first?.weightUnit ?? .kilogram
     }
 
     var body: some View {
@@ -30,7 +37,7 @@ struct HistoryDetailView: View {
                     .padding(.bottom, 24)
                 }
 
-                bottomButton
+                bottomButton(detail)
                     .padding(.horizontal, 16)
                     .padding(.top, 10)
                     .padding(.bottom, 16)
@@ -59,12 +66,6 @@ struct HistoryDetailView: View {
                 }
 
                 Spacer()
-
-                Button(action: {}) {
-                    Image(systemName: "person.crop.circle.badge.checkmark")
-                        .font(.system(size: 18, weight: .medium))
-                        .foregroundStyle(.secondary)
-                }
             }
         }
     }
@@ -110,7 +111,7 @@ struct HistoryDetailView: View {
 
             VStack(spacing: 12) {
                 ForEach(detail.orderedExercises) { exercise in
-                    ExerciseGroupCard(exercise: exercise)
+                    ExerciseGroupCard(exercise: exercise, weightUnit: weightUnit)
                 }
             }
         }
@@ -120,7 +121,7 @@ struct HistoryDetailView: View {
         let maxVolume = max(detail.orderedExercises.map(\.totalVolumeKg).max() ?? 1, 1)
 
         return VStack(alignment: .leading, spacing: 12) {
-            Label("卷量分布 (kg)", systemImage: "chart.bar.xaxis")
+            Label("卷量分布 (\(weightUnit.displaySymbol.lowercased()))", systemImage: "chart.bar.xaxis")
                 .font(.system(size: 17, weight: .bold))
 
             Text("每种动作的总重量与训练负载")
@@ -181,12 +182,14 @@ struct HistoryDetailView: View {
         )
     }
 
-    private var bottomButton: some View {
-        Button(action: {}) {
+    private func bottomButton(_ detail: WorkoutSession) -> some View {
+        Button(action: {
+            onStartFromHistory(detail)
+        }) {
             HStack(spacing: 8) {
                 Image(systemName: "arrow.clockwise")
                     .font(.system(size: 14, weight: .semibold))
-                Text("以此为模板开始训练")
+                Text("复制为新训练")
                     .font(.system(size: 15, weight: .semibold))
             }
             .foregroundStyle(.white)
@@ -203,7 +206,7 @@ struct HistoryDetailView: View {
     }
 
     private func volumeText(_ value: Double) -> String {
-        "\(value.formatted(.number.precision(.fractionLength(0)))) kg"
+        value.formattedVolume(unit: weightUnit)
     }
 }
 
@@ -244,6 +247,7 @@ private struct DetailMetricCard: View {
 
 private struct ExerciseGroupCard: View {
     let exercise: WorkoutExercise
+    let weightUnit: WeightUnit
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
@@ -262,7 +266,7 @@ private struct ExerciseGroupCard: View {
                 HStack {
                     Text("组号")
                     Spacer()
-                    Text("重量 (kg)")
+                    Text("重量 (\(weightUnit.displaySymbol.lowercased()))")
                     Spacer()
                     Text("次数")
                     Spacer()
@@ -277,7 +281,7 @@ private struct ExerciseGroupCard: View {
                     HStack {
                         Text("\(set.index)")
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        Text(set.weightDisplay)
+                        Text(set.weightDisplay(unit: weightUnit))
                             .frame(maxWidth: .infinity, alignment: .center)
                         Text(set.repsDisplay)
                             .frame(maxWidth: .infinity, alignment: .center)

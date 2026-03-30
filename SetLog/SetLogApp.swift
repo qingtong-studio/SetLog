@@ -12,6 +12,7 @@ import SwiftData
 struct SetLogApp: App {
     let sharedModelContainer: ModelContainer = {
         let schema = Schema([
+            AppPreferences.self,
             WorkoutSession.self,
             WorkoutExercise.self,
             WorkoutSet.self,
@@ -23,7 +24,10 @@ struct SetLogApp: App {
 
         do {
             let container = try makeModelContainer(schema: schema, configuration: modelConfiguration)
+            #if DEBUG
             try SampleDataSeeder.seedIfNeeded(in: container.mainContext)
+            #endif
+            try ensureAppPreferences(in: container.mainContext)
             return container
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
@@ -44,9 +48,13 @@ struct SetLogApp: App {
         do {
             return try ModelContainer(for: schema, configurations: [configuration])
         } catch {
+            #if DEBUG
             // Early development fallback: reset an incompatible local store after schema changes.
             try resetStore(at: configuration.url)
             return try ModelContainer(for: schema, configurations: [configuration])
+            #else
+            throw error
+            #endif
         }
     }
 
@@ -60,6 +68,16 @@ struct SetLogApp: App {
 
         for relatedURL in relatedURLs where fileManager.fileExists(atPath: relatedURL.path) {
             try fileManager.removeItem(at: relatedURL)
+        }
+    }
+
+    private static func ensureAppPreferences(in context: ModelContext) throws {
+        var descriptor = FetchDescriptor<AppPreferences>()
+        descriptor.fetchLimit = 1
+
+        if try context.fetch(descriptor).isEmpty {
+            context.insert(AppPreferences())
+            try context.save()
         }
     }
 }

@@ -54,16 +54,16 @@ struct ContentView: View {
                 onOpenTemplates: {
                     trainPath.append(.templates)
                 },
-                onStartTemplate: {
-                    let session = createQuickWorkout()
+                onStartTemplate: { template in
+                    let session = createWorkout(from: template)
                     activeWorkoutSession = session
                 }
             )
             .navigationDestination(for: TrainRoute.self) { route in
                 switch route {
                 case .templates:
-                    WorkoutTemplatesView {
-                        let session = createQuickWorkout()
+                    WorkoutTemplatesView { template in
+                        let session = createWorkout(from: template)
                         activeWorkoutSession = session
                     }
                 }
@@ -86,7 +86,11 @@ struct ContentView: View {
             .navigationDestination(for: HistoryRoute.self) { route in
                 switch route {
                 case .detail(let sessionID):
-                    HistoryDetailView(sessionID: sessionID)
+                    HistoryDetailView(sessionID: sessionID) { sourceSession in
+                        selectedTab = .train
+                        let session = createWorkout(from: sourceSession)
+                        activeWorkoutSession = session
+                    }
                 }
             }
         }
@@ -115,9 +119,81 @@ struct ContentView: View {
         try? modelContext.save()
         return session
     }
+
+    private func createWorkout(from template: WorkoutTemplate) -> WorkoutSession {
+        let session = WorkoutSession(
+            title: template.title,
+            dateStarted: .now,
+            templateName: template.title,
+            isCompleted: false
+        )
+        modelContext.insert(session)
+
+        for (exerciseOrder, templateExercise) in template.exercises
+            .sorted(by: { $0.order < $1.order })
+            .enumerated() {
+            let workoutExercise = WorkoutExercise(
+                name: templateExercise.name,
+                category: templateExercise.category,
+                order: exerciseOrder,
+                session: session
+            )
+
+            workoutExercise.sets = (1...max(1, templateExercise.defaultSets)).map { index in
+                WorkoutSet(
+                    index: index,
+                    targetReps: templateExercise.defaultReps,
+                    actualReps: nil,
+                    weightKg: templateExercise.defaultWeightKg,
+                    exercise: workoutExercise
+                )
+            }
+
+            session.exercises.append(workoutExercise)
+        }
+
+        try? modelContext.save()
+        return session
+    }
+
+    private func createWorkout(from sourceSession: WorkoutSession) -> WorkoutSession {
+        let session = WorkoutSession(
+            title: sourceSession.title,
+            dateStarted: .now,
+            templateName: sourceSession.templateName,
+            isCompleted: false
+        )
+        modelContext.insert(session)
+
+        for (exerciseOrder, sourceExercise) in sourceSession.orderedExercises.enumerated() {
+            let workoutExercise = WorkoutExercise(
+                name: sourceExercise.name,
+                category: sourceExercise.category,
+                order: exerciseOrder,
+                session: session
+            )
+
+            workoutExercise.sets = sourceExercise.orderedSets.enumerated().map { index, sourceSet in
+                WorkoutSet(
+                    index: index + 1,
+                    targetReps: sourceSet.targetReps ?? sourceSet.actualReps,
+                    actualReps: nil,
+                    weightKg: sourceSet.weightKg,
+                    restAfter: sourceSet.restAfter,
+                    exercise: workoutExercise
+                )
+            }
+
+            session.exercises.append(workoutExercise)
+        }
+
+        try? modelContext.save()
+        return session
+    }
 }
 
 private struct HomeDashboardView: View {
+    @Query private var preferences: [AppPreferences]
     @Query(
         filter: #Predicate<WorkoutSession> { session in
             session.isCompleted == false
@@ -125,14 +201,13 @@ private struct HomeDashboardView: View {
         sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]
     ) private var activeSessions: [WorkoutSession]
     @Query(sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]) private var allSessions: [WorkoutSession]
+    @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var workoutTemplates: [WorkoutTemplate]
     @State private var now = Date.now
-
-    private let templates = TrainingTemplate.mockData
 
     let onQuickStart: () -> Void
     let onOpenSession: (WorkoutSession) -> Void
     let onOpenTemplates: () -> Void
-    let onStartTemplate: () -> Void
+    let onStartTemplate: (WorkoutTemplate) -> Void
 
     var body: some View {
         ScrollView(showsIndicators: false) {
@@ -159,6 +234,10 @@ private struct HomeDashboardView: View {
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
             now = value
         }
+    }
+
+    private var weightUnit: WeightUnit {
+        preferences.first?.weightUnit ?? .kilogram
     }
 
     private var topBar: some View {
@@ -226,7 +305,7 @@ private struct HomeDashboardView: View {
             StatusRow(color: .orange, title: "总时长", value: summary.durationText, symbol: "clock")
             StatusRow(color: .green, title: "已完成", value: "\(summary.completedSets)", symbol: "checkmark.circle")
             StatusRow(color: .blue, title: "总组数", value: "\(summary.totalSets)", symbol: "dumbbell")
-            StatusRow(color: .purple, title: "总容量", value: summary.volumeText, symbol: "scalemass")
+            StatusRow(color: .purple, title: "总容量", value: summary.volumeText(unit: weightUnit), symbol: "scalemass")
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
@@ -316,10 +395,40 @@ private struct HomeDashboardView: View {
 
     private var templateList: some View {
         VStack(spacing: 14) {
-            ForEach(templates) { template in
-                TrainingTemplateCard(template: template, onStart: onStartTemplate)
+            if workoutTemplates.isEmpty {
+                noTemplateCard
+            } else {
+                ForEach(workoutTemplates.prefix(3)) { template in
+                    TrainingTemplateCard(
+                        template: template,
+                        lastUsedText: lastUsedText(for: template),
+                        tags: templateTags(for: template),
+                        onStart: onStartTemplate
+                    )
+                }
             }
         }
+    }
+
+    private var noTemplateCard: some View {
+        VStack(spacing: 8) {
+            Image(systemName: "square.stack.3d.up")
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(.secondary)
+            Text("暂无模板")
+                .font(.system(size: 14, weight: .semibold))
+            Text("先创建一条模板，训练会更快开始。")
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 120)
+        .background(.white)
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
     }
 
     private var noRecordCard: some View {
@@ -356,6 +465,23 @@ private struct HomeDashboardView: View {
             .sorted { lhs, rhs in
                 (lhs.dateEnded ?? lhs.updatedAt) > (rhs.dateEnded ?? rhs.updatedAt)
             }
+    }
+
+    private func lastUsedText(for template: WorkoutTemplate) -> String {
+        guard let session = allSessions.first(where: { $0.templateName == template.title }) else {
+            return "未使用"
+        }
+
+        let formatter = RelativeDateTimeFormatter()
+        formatter.locale = Locale(identifier: "zh_CN")
+        return formatter.localizedString(for: session.dateStarted, relativeTo: .now)
+    }
+
+    private func templateTags(for template: WorkoutTemplate) -> [String] {
+        template.exercises
+            .sorted(by: { $0.order < $1.order })
+            .prefix(4)
+            .map(\.name)
     }
 
     private var todaysSummary: DashboardSummary {
@@ -448,8 +574,10 @@ private struct HomeDashboardView: View {
 }
 
 private struct TrainingTemplateCard: View {
-    let template: TrainingTemplate
-    let onStart: () -> Void
+    let template: WorkoutTemplate
+    let lastUsedText: String
+    let tags: [String]
+    let onStart: (WorkoutTemplate) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
@@ -458,23 +586,16 @@ private struct TrainingTemplateCard: View {
                     Text(template.title)
                         .font(.system(size: 22, weight: .bold))
 
-                    Text("上次使用: \(template.lastUsed)")
+                    Text("上次使用: \(lastUsedText)")
                         .font(.system(size: 12))
                         .foregroundStyle(.secondary)
                 }
 
                 Spacer()
-
-                Button(action: {}) {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.secondary)
-                        .frame(width: 28, height: 28)
-                }
             }
 
             HStack(spacing: 6) {
-                ForEach(template.tags, id: \.self) { tag in
+                ForEach(tags, id: \.self) { tag in
                     Text(tag)
                         .font(.system(size: 10, weight: .medium))
                         .foregroundStyle(.secondary)
@@ -486,13 +607,15 @@ private struct TrainingTemplateCard: View {
             }
 
             HStack {
-                Label("预计 \(template.duration) min", systemImage: "clock")
+                Label("预计 \(template.estimatedDuration) min", systemImage: "clock")
                     .font(.system(size: 12, weight: .medium))
                     .foregroundStyle(.secondary)
 
                 Spacer()
 
-                Button(action: onStart) {
+                Button(action: {
+                    onStart(template)
+                }) {
                     HStack(spacing: 6) {
                         Image(systemName: "play.fill")
                             .font(.system(size: 10))
@@ -553,8 +676,8 @@ private struct DashboardSummary {
         "\(max(0, Int(totalDuration / 60)))m"
     }
 
-    var volumeText: String {
-        "\(Int(totalVolumeKg)) kg"
+    func volumeText(unit: WeightUnit) -> String {
+        totalVolumeKg.formattedVolume(unit: unit)
     }
 }
 
@@ -603,35 +726,6 @@ private struct CalendarDay: Identifiable {
     let isToday: Bool
 
     static let placeholder = CalendarDay(label: "", isInCurrentMonth: false, isToday: false)
-}
-
-private struct TrainingTemplate: Identifiable {
-    let id = UUID()
-    let title: String
-    let lastUsed: String
-    let tags: [String]
-    let duration: Int
-
-    static let mockData: [TrainingTemplate] = [
-        TrainingTemplate(
-            title: "全身力量基础",
-            lastUsed: "2天前",
-            tags: ["深蹲", "卧推", "硬拉", "引体向上"],
-            duration: 65
-        ),
-        TrainingTemplate(
-            title: "推力专项训练",
-            lastUsed: "昨天",
-            tags: ["肩推", "上斜卧推", "侧平举", "三头下压"],
-            duration: 50
-        ),
-        TrainingTemplate(
-            title: "拉力专项 A",
-            lastUsed: "5月15日",
-            tags: ["高位下拉", "杠铃划船", "面拉", "二头弯举"],
-            duration: 55
-        )
-    ]
 }
 
 private enum AppTab: CaseIterable {
