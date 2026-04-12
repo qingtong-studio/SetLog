@@ -608,8 +608,8 @@ struct CurrentWorkoutView: View {
         }
 
         let baseKg = parsedValue.convertedWeight(from: weightUnit, to: .kilogram)
-        let exerciseWeightMode = set.exercise?.weightMode ?? .total
-        set.weightKg = exerciseWeightMode == .perSide ? baseKg * 2 : baseKg
+        let exerciseWeightMode = set.exercise?.weightMode ?? .standard
+        set.weightKg = exerciseWeightMode == .singleHand ? baseKg * 2 : baseKg
         workout?.updatedAt = now
         try? modelContext.save()
     }
@@ -877,7 +877,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func toggleWeightMode(for exercise: WorkoutExercise) {
-        exercise.weightMode = exercise.weightMode == .total ? .perSide : .total
+        exercise.weightMode = exercise.weightMode == .standard ? .singleHand : .standard
         try? modelContext.save()
     }
 
@@ -1003,7 +1003,7 @@ struct ExerciseEditorCard: View {
     let onDragEnded: () -> Void
 
     private var weightColumnTitle: String {
-        exercise.weightMode == .perSide ? "单边" : "重量"
+        exercise.weightMode == .singleHand ? "单手重" : "重量"
     }
 
     var body: some View {
@@ -1039,8 +1039,8 @@ struct ExerciseEditorCard: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
 
-                        if exercise.weightMode == .perSide {
-                            Text("单边")
+                        if exercise.weightMode == .singleHand {
+                            Text("单手")
                                 .font(.system(size: 9, weight: .bold))
                                 .foregroundStyle(.orange)
                                 .padding(.horizontal, 5)
@@ -1079,8 +1079,8 @@ struct ExerciseEditorCard: View {
                 Menu {
                     Button(action: onToggleWeightMode) {
                         Label(
-                            exercise.weightMode == .total ? "切换为单边重量" : "切换为总重量",
-                            systemImage: exercise.weightMode == .total ? "arrow.left.arrow.right" : "equal.circle"
+                            exercise.weightMode == .standard ? "切换为单手重量" : "切换为总重量",
+                            systemImage: exercise.weightMode == .standard ? "arrow.left.arrow.right" : "equal.circle"
                         )
                     }
                     Button(action: onReplaceExercise) {
@@ -1097,13 +1097,39 @@ struct ExerciseEditorCard: View {
                 }
             }
 
+            // 重量模式切换
+            HStack(spacing: 0) {
+                ForEach(ExerciseWeightMode.allCases, id: \.self) { mode in
+                    let isSelected = exercise.weightMode == mode
+                    Button {
+                        if !isSelected { onToggleWeightMode() }
+                    } label: {
+                        Text(mode.displayName)
+                            .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                            .foregroundStyle(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(red: 0.50, green: 0.53, blue: 0.58))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08).opacity(0.10) : Color.clear)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .animation(.easeInOut(duration: 0.15), value: exercise.weightMode)
+                }
+            }
+
             VStack(spacing: 12) {
                 HStack(spacing: 0) {
                     HStack(spacing: WorkoutCardLayout.columnSpacing) {
                         Text("组")
                             .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                        Text(weightColumnTitle)
-                            .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
+                        HStack(spacing: 2) {
+                            Text(weightColumnTitle)
+                            if exercise.weightMode == .singleHand {
+                                Text("×2")
+                                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                            }
+                        }
+                        .frame(width: WorkoutCardLayout.inputCellWidth + (exercise.weightMode == .singleHand ? 14 : 0), alignment: .center)
                         Text("次数")
                             .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
                         Text("休息")
@@ -1229,7 +1255,7 @@ struct WorkoutSetRow: View {
 
     private var weightDisplayValue: String {
         let baseKg = set.weightKg
-        let displayKg = weightMode == .perSide ? baseKg / 2 : baseKg
+        let displayKg = weightMode == .singleHand ? baseKg / 2 : baseKg
         return displayKg.formattedWeight(unit: weightUnit)
     }
 
@@ -1245,6 +1271,11 @@ struct WorkoutSetRow: View {
         self.set.isWarmup ? Color.orange.opacity(0.04) : Color.clear
     }
 
+    // For single-hand mode, odd sets = 左, even sets = 右
+    private var handLabel: String {
+        set.index.isMultiple(of: 2) ? "右" : "左"
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: WorkoutCardLayout.columnSpacing) {
@@ -1256,17 +1287,25 @@ struct WorkoutSetRow: View {
                         onToggleSetType()
                     }
 
-                EditableInputCell(
-                    value: weightDisplayValue,
-                    keyboardType: .decimalPad,
-                    isEditable: true,
-                    activeTextColor: Color(uiColor: .label),
-                    inactiveTextColor: Color(uiColor: .label),
-                    onBeginEditing: onBeginEditing,
-                    onCommit: onUpdateWeight,
-                    onCopyRight: onCopyRight,
-                    onCopyDown: onCopyDown
-                )
+                VStack(spacing: 1) {
+                    EditableInputCell(
+                        value: weightDisplayValue,
+                        keyboardType: .decimalPad,
+                        isEditable: true,
+                        activeTextColor: Color(uiColor: .label),
+                        inactiveTextColor: Color(uiColor: .label),
+                        onBeginEditing: onBeginEditing,
+                        onCommit: onUpdateWeight,
+                        onCopyRight: onCopyRight,
+                        onCopyDown: onCopyDown
+                    )
+                    if weightMode == .singleHand {
+                        Text(handLabel)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    }
+                }
+                .frame(width: WorkoutCardLayout.inputCellWidth)
                 EditableInputCell(
                     value: set.repsDisplay,
                     keyboardType: .numberPad,

@@ -12,8 +12,15 @@ enum SetType: String, Codable, CaseIterable {
 }
 
 enum ExerciseWeightMode: String, Codable, CaseIterable {
-    case total = "total"
-    case perSide = "perSide"
+    case standard = "standard"      // 非单手 - 输入总重（器械/杠铃）
+    case singleHand = "singleHand"  // 单手 - 输入单手重量（哑铃）
+
+    var displayName: String {
+        switch self {
+        case .standard: return "非单手"
+        case .singleHand: return "单手"
+        }
+    }
 }
 
 @Model
@@ -125,13 +132,18 @@ final class WorkoutExercise {
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.exercise)
     var sets: [WorkoutSet]
 
+    var weightMode: ExerciseWeightMode {
+        get { ExerciseWeightMode(rawValue: weightModeRawValue ?? "") ?? .standard }
+        set { weightModeRawValue = newValue.rawValue }
+    }
+
     init(
         id: UUID = UUID(),
         name: String,
         category: String,
         order: Int,
         notes: String = "",
-        weightModeRawValue: String? = ExerciseWeightMode.total.rawValue,
+        weightModeRawValue: String? = ExerciseWeightMode.standard.rawValue,
         session: WorkoutSession? = nil,
         sets: [WorkoutSet] = []
     ) {
@@ -363,7 +375,7 @@ extension WorkoutSession {
 
 extension WorkoutExercise {
     var weightMode: ExerciseWeightMode {
-        get { ExerciseWeightMode(rawValue: weightModeRawValue ?? "") ?? .total }
+        get { ExerciseWeightMode(rawValue: weightModeRawValue ?? "") ?? .standard }
         set { weightModeRawValue = newValue.rawValue }
     }
 
@@ -392,8 +404,11 @@ extension WorkoutExercise {
     }
 
     var totalVolumeKg: Double {
-        orderedSets.filter(\.isCompleted).reduce(0) { partialResult, set in
-            partialResult + (set.weightKg * Double(set.actualReps ?? set.targetReps ?? 0))
+        let mode = weightMode
+        return orderedSets.filter(\.isCompleted).reduce(0) { result, set in
+            let reps = Double(set.actualReps ?? set.targetReps ?? 0)
+            let effective = mode == .singleHand ? set.weightKg * 2 : set.weightKg
+            return result + effective * reps
         }
     }
 }
@@ -436,6 +451,10 @@ extension WorkoutSet {
 
     func weightDisplay(unit: WeightUnit) -> String {
         weightKg.formattedWeight(unit: unit)
+    }
+
+    func effectiveWeightKg(mode: ExerciseWeightMode) -> Double {
+        mode == .singleHand ? weightKg * 2 : weightKg
     }
 }
 

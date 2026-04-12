@@ -340,7 +340,7 @@ struct WorkoutRecordEditView: View {
     }
 
     private func toggleWeightMode(for exercise: WorkoutExercise) {
-        exercise.weightMode = exercise.weightMode == .total ? .perSide : .total
+        exercise.weightMode = exercise.weightMode == .standard ? .singleHand : .standard
         try? modelContext.save()
     }
 

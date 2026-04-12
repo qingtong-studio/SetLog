@@ -280,7 +280,14 @@ private struct ExerciseGroupCard: View {
                 HStack {
                     Text("组号")
                     Spacer()
-                    Text("重量 (\(weightUnit.displaySymbol.lowercased()))")
+                    HStack(spacing: 2) {
+                        Text(exercise.weightMode == .singleHand ? "单手重" : "重量")
+                        Text("(\(weightUnit.displaySymbol.lowercased()))")
+                        if exercise.weightMode == .singleHand {
+                            Text("×2")
+                                .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                        }
+                    }
                     Spacer()
                     Text("次数")
                     Spacer()
