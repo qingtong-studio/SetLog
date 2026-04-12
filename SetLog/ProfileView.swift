@@ -56,7 +56,7 @@ struct ProfileView: View {
             .padding(.top, 12)
             .padding(.bottom, 28)
         }
-        .background(Color(.systemGray6))
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationBarHidden(true)
         .onAppear {
             ensurePreferences()
@@ -178,7 +178,7 @@ struct ProfileView: View {
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(16)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -221,7 +221,7 @@ struct ProfileView: View {
             }
         }
         .padding(16)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -240,7 +240,7 @@ struct ProfileView: View {
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
-        .background(Color.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -275,7 +275,7 @@ struct ProfileView: View {
                     }
                 }
             }
-            .background(.white)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -295,7 +295,7 @@ struct ProfileView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 54)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)

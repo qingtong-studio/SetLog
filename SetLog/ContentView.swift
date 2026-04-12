@@ -37,7 +37,7 @@ struct ContentView: View {
                 }
                 .tag(AppTab.profile)
         }
-        .background(Color(.systemGray6))
+        .background(Color(uiColor: .systemGroupedBackground))
         .tint(.orange)
     }
 
@@ -80,9 +80,14 @@ struct ContentView: View {
 
     private var historyStack: some View {
         NavigationStack(path: $historyPath) {
-            HistoryView { sessionID in
-                historyPath.append(.detail(sessionID))
-            }
+            HistoryView(
+                onOpenDetail: { sessionID in
+                    historyPath.append(.detail(sessionID))
+                },
+                onAddRecord: { date in
+                    historyPath.append(.addRecord(date))
+                }
+            )
             .navigationDestination(for: HistoryRoute.self) { route in
                 switch route {
                 case .detail(let sessionID):
@@ -90,7 +95,13 @@ struct ContentView: View {
                         selectedTab = .train
                         let session = createWorkout(from: sourceSession)
                         activeWorkoutSession = session
+                    } onEdit: { sessionID in
+                        historyPath.append(.editRecord(sessionID))
                     }
+                case .editRecord(let sessionID):
+                    EditRecordDestination(sessionID: sessionID)
+                case .addRecord(let date):
+                    AddRecordDestination(date: date)
                 }
             }
         }
@@ -229,7 +240,7 @@ private struct HomeDashboardView: View {
             .padding(.top, 12)
             .padding(.bottom, 24)
         }
-        .background(Color(.systemGray6))
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationBarHidden(true)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
             now = value
@@ -286,15 +297,15 @@ private struct HomeDashboardView: View {
                         .minimumScaleFactor(0.75)
                         .frame(maxWidth: .infinity)
                         .frame(height: 18)
-                        .background(day.isToday ? Color.black : Color.clear)
-                        .foregroundStyle(day.isToday ? .white : (day.isInCurrentMonth ? .primary : .clear))
+                        .background(day.isToday ? Color.primary : Color.clear)
+                        .foregroundStyle(day.isToday ? Color(uiColor: .systemBackground) : (day.isInCurrentMonth ? .primary : .clear))
                         .clipShape(Circle())
                 }
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
@@ -309,7 +320,7 @@ private struct HomeDashboardView: View {
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -332,7 +343,7 @@ private struct HomeDashboardView: View {
             .padding(.horizontal, 16)
             .frame(height: 56)
             .frame(maxWidth: .infinity)
-            .background(.white)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -423,7 +434,7 @@ private struct HomeDashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 120)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -447,7 +458,7 @@ private struct HomeDashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 150)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -557,13 +568,7 @@ private struct HomeDashboardView: View {
             }
         }
         .padding(16)
-        .background(
-            LinearGradient(
-                colors: [Color.white, Color(red: 0.98, green: 0.98, blue: 0.99)],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
@@ -631,7 +636,7 @@ private struct TrainingTemplateCard: View {
             }
         }
         .padding(16)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -760,8 +765,59 @@ private enum TrainRoute: Hashable {
     case templates
 }
 
+// MARK: - 编辑记录目标页（通过 sessionID 查询已有 session）
+
+private struct EditRecordDestination: View {
+    @Query private var sessions: [WorkoutSession]
+
+    init(sessionID: UUID) {
+        _sessions = Query(filter: #Predicate<WorkoutSession> { $0.id == sessionID })
+    }
+
+    var body: some View {
+        if let session = sessions.first {
+            WorkoutRecordEditView(workout: session)
+        } else {
+            Text("未找到训练记录").foregroundStyle(.secondary)
+        }
+    }
+}
+
+// MARK: - 新增记录目标页（为指定日期创建一条新 session）
+
+private struct AddRecordDestination: View {
+    @Environment(\.modelContext) private var modelContext
+    @State private var session: WorkoutSession?
+
+    let date: Date
+
+    var body: some View {
+        Group {
+            if let session {
+                WorkoutRecordEditView(workout: session)
+            } else {
+                ProgressView()
+                    .onAppear { createSession() }
+            }
+        }
+    }
+
+    private func createSession() {
+        let s = WorkoutSession(
+            title: "训练记录",
+            dateStarted: date,
+            isCompleted: false
+        )
+        modelContext.insert(s)
+        try? modelContext.save()
+        session = s
+    }
+}
+
 private enum HistoryRoute: Hashable {
     case detail(UUID)
+    case editRecord(UUID)
+    case addRecord(Date)
 }
 
 #Preview {

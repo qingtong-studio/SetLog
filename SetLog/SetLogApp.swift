@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UserNotifications
 
 @main
 struct SetLogApp: App {
@@ -24,9 +25,7 @@ struct SetLogApp: App {
 
         do {
             let container = try makeModelContainer(schema: schema, configuration: modelConfiguration)
-            #if DEBUG
             try SampleDataSeeder.seedIfNeeded(in: container.mainContext)
-            #endif
             try ensureAppPreferences(in: container.mainContext)
             return container
         } catch {
@@ -37,8 +36,15 @@ struct SetLogApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    requestNotificationPermission()
+                }
         }
         .modelContainer(sharedModelContainer)
+    }
+
+    private func requestNotificationPermission() {
+        UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
     private static func makeModelContainer(

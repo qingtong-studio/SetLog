@@ -10,6 +10,7 @@ import SwiftUI
 
 struct WorkoutTemplatesView: View {
     @State private var selectedCategory = "全部"
+    @State private var detailTemplate: WorkoutTemplate?
     @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var templates: [WorkoutTemplate]
 
     let onApplyTemplate: (WorkoutTemplate) -> Void
@@ -45,7 +46,7 @@ struct WorkoutTemplatesView: View {
                 .padding(.bottom, 24)
             }
         }
-        .background(Color(.systemGray6))
+        .background(Color(uiColor: .systemGroupedBackground))
         .navigationBarHidden(true)
     }
 
@@ -54,7 +55,7 @@ struct WorkoutTemplatesView: View {
             .font(.system(size: 18, weight: .semibold))
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(.white)
+            .background(Color(uiColor: .secondarySystemGroupedBackground))
     }
 
     private var discoverHeader: some View {
@@ -94,8 +95,15 @@ struct WorkoutTemplatesView: View {
             } else {
                 ForEach(filteredTemplates) { template in
                     WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
+                        .contentShape(Rectangle())
+                        .onTapGesture {
+                            detailTemplate = template
+                        }
                 }
             }
+        }
+        .navigationDestination(item: $detailTemplate) { template in
+            TemplateDetailView(template: template, onApply: onApplyTemplate)
         }
     }
 
@@ -113,7 +121,7 @@ struct WorkoutTemplatesView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -136,7 +144,7 @@ struct WorkoutTemplatesView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 150)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
@@ -219,7 +227,7 @@ private struct WorkoutTemplateCard: View {
             }
         }
         .padding(16)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
