@@ -48,6 +48,11 @@ struct CurrentWorkoutView: View {
                                     onAddSet: {
                                         addSet(to: exercise, in: workout)
                                     },
+                                    onUpdateWeightMode: { mode in
+                                        exercise.weightMode = mode
+                                        workout.updatedAt = now
+                                        try? modelContext.save()
+                                    },
                                     onDelete: {
                                         delete(exercise: exercise, from: workout)
                                     }
@@ -624,6 +629,7 @@ private struct ExerciseEditorCard: View {
     let onBeginEditingSet: (WorkoutSet) -> Void
     let onAddSet: () -> Void
     let onDelete: () -> Void
+    let onUpdateWeightMode: (WeightMode) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
@@ -659,13 +665,39 @@ private struct ExerciseEditorCard: View {
                 }
             }
 
+            // 重量模式切换
+            HStack(spacing: 0) {
+                ForEach(WeightMode.allCases, id: \.self) { mode in
+                    let isSelected = exercise.weightMode == mode
+                    Button {
+                        onUpdateWeightMode(mode)
+                    } label: {
+                        Text(mode.displayName)
+                            .font(.system(size: 11, weight: isSelected ? .medium : .regular))
+                            .foregroundStyle(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(red: 0.50, green: 0.53, blue: 0.58))
+                            .padding(.horizontal, 10)
+                            .padding(.vertical, 4)
+                            .background(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08).opacity(0.10) : Color.clear)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                    .animation(.easeInOut(duration: 0.15), value: exercise.weightMode)
+                }
+            }
+
             VStack(spacing: 12) {
                 HStack(spacing: 0) {
                     HStack(spacing: WorkoutCardLayout.columnSpacing) {
                         Text("组")
                             .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                        Text("重量")
-                            .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
+                        HStack(spacing: 2) {
+                            Text(exercise.weightMode == .singleHand ? "单手重" : "重量")
+                            if exercise.weightMode == .singleHand {
+                                Text("×2")
+                                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                            }
+                        }
+                        .frame(width: WorkoutCardLayout.inputCellWidth + (exercise.weightMode == .singleHand ? 14 : 0), alignment: .center)
                         Text("次数")
                             .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
                         Text("休息")
@@ -680,7 +712,7 @@ private struct ExerciseEditorCard: View {
                 .foregroundStyle(Color(red: 0.29, green: 0.32, blue: 0.38))
 
                 ForEach(exercise.orderedSets) { item in
-                    WorkoutSetRow(set: item, weightUnit: weightUnit) {
+                    WorkoutSetRow(set: item, weightUnit: weightUnit, weightMode: exercise.weightMode) {
                         onToggleSet(item)
                     } onUpdateWeight: { value in
                         onUpdateWeight(item, value)
@@ -773,11 +805,17 @@ private struct ExerciseEditorCard: View {
 private struct WorkoutSetRow: View {
     let set: WorkoutSet
     let weightUnit: WeightUnit
+    let weightMode: WeightMode
     let onToggle: () -> Void
     let onUpdateWeight: (String) -> Void
     let onUpdateReps: (String) -> Void
     let onUpdateRest: (String) -> Void
     let onBeginEditing: () -> Void
+
+    // For single-hand mode, odd sets = 左, even sets = 右
+    private var handLabel: String {
+        set.index.isMultiple(of: 2) ? "右" : "左"
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -787,15 +825,23 @@ private struct WorkoutSetRow: View {
                     .foregroundStyle(Color(red: 0.14, green: 0.15, blue: 0.18))
                     .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
 
-                EditableInputCell(
-                    value: set.weightDisplay(unit: weightUnit),
-                    keyboardType: .decimalPad,
-                    isEditable: true,
-                    activeTextColor: Color(red: 0.14, green: 0.15, blue: 0.18),
-                    inactiveTextColor: Color(red: 0.14, green: 0.15, blue: 0.18),
-                    onBeginEditing: onBeginEditing,
-                    onCommit: onUpdateWeight
-                )
+                VStack(spacing: 1) {
+                    EditableInputCell(
+                        value: set.weightDisplay(unit: weightUnit),
+                        keyboardType: .decimalPad,
+                        isEditable: true,
+                        activeTextColor: Color(red: 0.14, green: 0.15, blue: 0.18),
+                        inactiveTextColor: Color(red: 0.14, green: 0.15, blue: 0.18),
+                        onBeginEditing: onBeginEditing,
+                        onCommit: onUpdateWeight
+                    )
+                    if weightMode == .singleHand {
+                        Text(handLabel)
+                            .font(.system(size: 9, weight: .medium))
+                            .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    }
+                }
+                .frame(width: WorkoutCardLayout.inputCellWidth)
                 EditableInputCell(
                     value: set.repsDisplay,
                     keyboardType: .numberPad,
