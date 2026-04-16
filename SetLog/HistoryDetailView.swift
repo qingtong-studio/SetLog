@@ -141,7 +141,7 @@ struct HistoryDetailView: View {
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
-            HStack(alignment: .bottom, spacing: 26) {
+            HStack(alignment: .bottom, spacing: 0) {
                 ForEach(detail.orderedExercises) { item in
                     VStack(spacing: 8) {
                         ZStack(alignment: .bottom) {
@@ -157,6 +157,9 @@ struct HistoryDetailView: View {
                         Text(item.name)
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                            .minimumScaleFactor(0.7)
+                            .multilineTextAlignment(.center)
                     }
                     .frame(maxWidth: .infinity)
                 }
@@ -189,7 +192,7 @@ struct HistoryDetailView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(16)
-        .background(.white)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -279,7 +282,7 @@ private struct ExerciseGroupCard: View {
                 // Table header
                 HStack {
                     Text("组号")
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     HStack(spacing: 2) {
                         Text(exercise.weightMode == .singleHand ? "单手重" : "重量")
                         Text("(\(weightUnit.displaySymbol.lowercased()))")
@@ -288,10 +291,11 @@ private struct ExerciseGroupCard: View {
                                 .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
                         }
                     }
-                    Spacer()
+                    .frame(maxWidth: .infinity, alignment: .center)
                     Text("次数")
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .center)
                     Text("休息时间")
+                        .frame(maxWidth: .infinity, alignment: .trailing)
                 }
                 .font(.system(size: 10, weight: .semibold))
                 .foregroundStyle(.secondary)

@@ -59,6 +59,8 @@ struct CurrentWorkoutView: View {
                                     exercise: exercise,
                                     weightUnit: weightUnit,
                                     isDragging: isDragging,
+                                    isRestActive: workout.hasActiveRest,
+                                    restSourceSetID: workout.restSourceSetID,
                                     onToggleSet: { set in
                                         toggle(set: set, in: workout)
                                     },
@@ -91,6 +93,9 @@ struct CurrentWorkoutView: View {
                                     },
                                     onToggleSetType: { set in
                                         toggleSetType(for: set, in: workout)
+                                    },
+                                    onDeleteSet: { set in
+                                        deleteSet(set, from: exercise, in: workout)
                                     },
                                     onAddWarmupSet: {
                                         addWarmupSet(to: exercise, in: workout)
@@ -476,6 +481,12 @@ struct CurrentWorkoutView: View {
     }
 
     private func toggle(set: WorkoutSet, in workout: WorkoutSession) {
+        // Block completing other sets while rest timer is active
+        if workout.hasActiveRest && !set.isCompleted && set.id != workout.restSourceSetID {
+            UINotificationFeedbackGenerator().notificationOccurred(.warning)
+            return
+        }
+
         let toggledSetID = set.id
         set.isCompleted.toggle()
         set.actualReps = set.actualReps ?? set.targetReps
@@ -514,6 +525,20 @@ struct CurrentWorkoutView: View {
             exercise: exercise
         )
         exercise.sets.append(newSet)
+        workout.updatedAt = now
+        try? modelContext.save()
+    }
+
+    private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutExercise, in workout: WorkoutSession) {
+        if workout.restSourceSetID == set.id {
+            clearRest(for: workout)
+        }
+        exercise.sets.removeAll { $0.id == set.id }
+        modelContext.delete(set)
+        // Reindex: warmups first, then working
+        let warmups = exercise.warmupSets
+        let workings = exercise.workingSets
+        for (i, s) in (warmups + workings).enumerated() { s.index = i + 1 }
         workout.updatedAt = now
         try? modelContext.save()
     }
@@ -891,11 +916,12 @@ struct CurrentWorkoutView: View {
     }
 
     private func addWarmupSet(to exercise: WorkoutExercise, in workout: WorkoutSession) {
+        let source = exercise.warmupSets.last
         let newSet = WorkoutSet(
             index: 0,
-            targetReps: exercise.orderedSets.first?.targetReps ?? 10,
-            weightKg: (exercise.orderedSets.first?.weightKg ?? 20) * 0.5,
-            restAfter: 45,
+            targetReps: source?.targetReps ?? exercise.workingSets.first?.targetReps ?? 10,
+            weightKg: source?.weightKg ?? (exercise.workingSets.first?.weightKg ?? 20) * 0.5,
+            restAfter: source?.restAfter ?? 45,
             setTypeRawValue: SetType.warmup.rawValue,
             exercise: exercise
         )
@@ -984,6 +1010,8 @@ struct ExerciseEditorCard: View {
     let exercise: WorkoutExercise
     let weightUnit: WeightUnit
     let isDragging: Bool
+    var isRestActive: Bool = false
+    var restSourceSetID: UUID? = nil
     let onToggleSet: (WorkoutSet) -> Void
     let onUpdateWeight: (WorkoutSet, String) -> Void
     let onUpdateReps: (WorkoutSet, String) -> Void
@@ -995,12 +1023,14 @@ struct ExerciseEditorCard: View {
     let onAddSet: () -> Void
     let onToggleWeightMode: () -> Void
     let onToggleSetType: (WorkoutSet) -> Void
+    let onDeleteSet: (WorkoutSet) -> Void
     let onAddWarmupSet: () -> Void
     let onReplaceExercise: () -> Void
     let onDelete: () -> Void
     let onDragActivated: () -> Void
     let onDragChanged: (CGFloat) -> Void
     let onDragEnded: () -> Void
+    var forceEditableRest: Bool = false
 
     private var weightColumnTitle: String {
         exercise.weightMode == .singleHand ? "单手重" : "重量"
@@ -1063,16 +1093,17 @@ struct ExerciseEditorCard: View {
                 Spacer()
 
                 Button(action: onAddWarmupSet) {
-                    HStack(spacing: 3) {
+                    HStack(spacing: 4) {
                         Image(systemName: "flame.fill")
-                            .font(.system(size: 11))
-                        Text("热身")
-                            .font(.system(size: 12, weight: .medium))
+                            .font(.system(size: 12))
+                        Text("+ 热身组")
+                            .font(.system(size: 13, weight: .semibold))
                     }
                     .foregroundStyle(.orange)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(Color.orange.opacity(0.12))
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.orange.opacity(0.18))
+                    .overlay(Capsule().stroke(Color.orange.opacity(0.5), lineWidth: 1))
                     .clipShape(Capsule())
                 }
 
@@ -1129,11 +1160,11 @@ struct ExerciseEditorCard: View {
                                     .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
                             }
                         }
-                        .frame(width: WorkoutCardLayout.inputCellWidth + (exercise.weightMode == .singleHand ? 14 : 0), alignment: .center)
+                        .frame(maxWidth: .infinity, alignment: .center)
                         Text("次数")
-                            .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
+                            .frame(maxWidth: .infinity, alignment: .center)
                         Text("休息")
-                            .frame(width: WorkoutCardLayout.inputCellWidth, alignment: .center)
+                            .frame(maxWidth: .infinity, alignment: .center)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -1148,6 +1179,9 @@ struct ExerciseEditorCard: View {
                         set: item,
                         weightUnit: weightUnit,
                         weightMode: exercise.weightMode,
+                        canDelete: exercise.orderedSets.count > 1,
+                        isRestActive: isRestActive,
+                        restSourceSetID: restSourceSetID,
                         onToggle: { onToggleSet(item) },
                         onUpdateWeight: { value in onUpdateWeight(item, value) },
                         onUpdateReps: { value in onUpdateReps(item, value) },
@@ -1156,7 +1190,9 @@ struct ExerciseEditorCard: View {
                         onCopyRight: { onCopyWeightRight(item) },
                         onCopyDown: { onCopyWeightDown(item) },
                         onCopyRepsDown: { onCopyRepsDown(item) },
-                        onToggleSetType: { onToggleSetType(item) }
+                        onToggleSetType: { onToggleSetType(item) },
+                        onDeleteSet: { onDeleteSet(item) },
+                        forceEditableRest: forceEditableRest
                     )
                 }
             }
@@ -1243,6 +1279,9 @@ struct WorkoutSetRow: View {
     let set: WorkoutSet
     let weightUnit: WeightUnit
     let weightMode: ExerciseWeightMode
+    var canDelete: Bool = false
+    var isRestActive: Bool = false
+    var restSourceSetID: UUID? = nil
     let onToggle: () -> Void
     let onUpdateWeight: (String) -> Void
     let onUpdateReps: (String) -> Void
@@ -1252,6 +1291,8 @@ struct WorkoutSetRow: View {
     let onCopyDown: () -> Void
     let onCopyRepsDown: () -> Void
     let onToggleSetType: () -> Void
+    var onDeleteSet: (() -> Void)? = nil
+    var forceEditableRest: Bool = false
 
     private var weightDisplayValue: String {
         let baseKg = set.weightKg
@@ -1268,12 +1309,19 @@ struct WorkoutSetRow: View {
     }
 
     private var rowBackground: Color {
-        self.set.isWarmup ? Color.orange.opacity(0.04) : Color.clear
+        if isRestActive && set.id == restSourceSetID {
+            return Color.orange.opacity(0.10)
+        }
+        return self.set.isWarmup ? Color.orange.opacity(0.04) : Color.clear
+    }
+
+    private var isToggleLocked: Bool {
+        isRestActive && !set.isCompleted && set.id != restSourceSetID
     }
 
     // For single-hand mode, odd sets = 左, even sets = 右
     private var handLabel: String {
-        set.index.isMultiple(of: 2) ? "右" : "左"
+        self.set.index.isMultiple(of: 2) ? "右" : "左"
     }
 
     var body: some View {
@@ -1283,8 +1331,18 @@ struct WorkoutSetRow: View {
                     .font(.system(size: 14, weight: set.isWarmup ? .bold : .regular))
                     .foregroundStyle(indexColor)
                     .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                    .onLongPressGesture {
-                        onToggleSetType()
+                    .contextMenu {
+                        Button(action: onToggleSetType) {
+                            Label(
+                                set.isWarmup ? "切换为正式组" : "切换为热身组",
+                                systemImage: set.isWarmup ? "flame" : "flame.fill"
+                            )
+                        }
+                        if canDelete {
+                            Button(role: .destructive, action: { onDeleteSet?() }) {
+                                Label("删除此组", systemImage: "trash")
+                            }
+                        }
                     }
 
                 VStack(spacing: 1) {
@@ -1305,7 +1363,7 @@ struct WorkoutSetRow: View {
                             .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
                     }
                 }
-                .frame(width: WorkoutCardLayout.inputCellWidth)
+                .frame(maxWidth: .infinity)
                 EditableInputCell(
                     value: set.repsDisplay,
                     keyboardType: .numberPad,
@@ -1316,12 +1374,15 @@ struct WorkoutSetRow: View {
                     onCommit: onUpdateReps,
                     onCopyDown: onCopyRepsDown
                 )
+                let isRestSource = isRestActive && set.id == restSourceSetID
                 EditableInputCell(
-                    value: set.completedRestDisplay,
+                    value: forceEditableRest
+                        ? (set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))")
+                        : (isRestSource ? "..." : set.completedRestDisplay),
                     keyboardType: .numberPad,
-                    isEditable: set.canEditRecordedRest,
+                    isEditable: set.canEditRecordedRest || forceEditableRest,
                     activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
-                    inactiveTextColor: Color(uiColor: .tertiaryLabel),
+                    inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
                     onBeginEditing: onBeginEditing,
                     onCommit: onUpdateRest
                 )
@@ -1347,6 +1408,7 @@ struct WorkoutSetRow: View {
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .opacity(isToggleLocked ? 0.3 : 1.0)
         }
         .padding(.vertical, set.isWarmup ? 2 : 0)
         .background(rowBackground)
@@ -1377,7 +1439,8 @@ private struct EditableInputCell: View {
             onCopyRight: onCopyRight,
             onCopyDown: onCopyDown
         )
-            .frame(width: WorkoutCardLayout.inputCellWidth, height: 36, alignment: .center)
+            .frame(maxWidth: .infinity)
+            .frame(height: 36)
             .background(Color(uiColor: .tertiarySystemFill))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
@@ -1498,13 +1561,15 @@ private struct AddPlaceholderCell: View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color(red: 0.89, green: 0.90, blue: 0.93), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                .frame(width: WorkoutCardLayout.inputCellWidth, height: 36)
+                .frame(maxWidth: .infinity)
+                .frame(height: 36)
 
             Image(systemName: "plus")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Color(red: 0.67, green: 0.70, blue: 0.75))
         }
-        .frame(width: WorkoutCardLayout.inputCellWidth, height: 36)
+        .frame(maxWidth: .infinity)
+        .frame(height: 36)
     }
 }
 

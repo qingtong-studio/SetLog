@@ -13,6 +13,9 @@ struct ProfileView: View {
     @Query private var preferences: [AppPreferences]
     @Query(sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]) private var sessions: [WorkoutSession]
 
+    @State private var showExportShare = false
+    @State private var exportFileURL: URL?
+    @State private var showNoDataAlert = false
     private let accountState: AccountState = .guest
     private let regularSettings = SettingSection(
         title: "常规设置",
@@ -43,6 +46,7 @@ struct ProfileView: View {
                 profileTopBar
                 accountSummaryCard
                 localStatsCard
+                exportCard
                 syncNoticeCard
                 settingsSection(regularSettings)
                 settingsSection(guestAccountSection)
@@ -227,6 +231,68 @@ struct ProfileView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(Color(.systemGray5), lineWidth: 1)
         )
+    }
+
+    private var exportCard: some View {
+        Button(action: exportTrainingRecords) {
+            HStack(spacing: 12) {
+                Image(systemName: "square.and.arrow.up")
+                    .font(.system(size: 15, weight: .medium))
+                    .foregroundStyle(.white)
+                    .frame(width: 30, height: 30)
+                    .background(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    .clipShape(Circle())
+
+                VStack(alignment: .leading, spacing: 3) {
+                    Text("导出训练记录")
+                        .font(.system(size: 15, weight: .semibold))
+                        .foregroundStyle(.primary)
+                    Text("导出为 Markdown 格式，适合 Claude 等 AI 分析")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 14)
+            .frame(minHeight: 68)
+        }
+        .buttonStyle(.plain)
+        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .stroke(Color(.systemGray5), lineWidth: 1)
+        )
+        .sheet(isPresented: $showExportShare) {
+            if let url = exportFileURL {
+                ShareSheet(activityItems: [url])
+            }
+        }
+        .alert("暂无训练记录", isPresented: $showNoDataAlert) {
+            Button("好的", role: .cancel) {}
+        } message: {
+            Text("完成至少一次训练后即可导出记录。")
+        }
+    }
+
+    private func exportTrainingRecords() {
+        let completed = completedSessions
+        guard !completed.isEmpty else {
+            showNoDataAlert = true
+            return
+        }
+        let unit = appPreferences?.weightUnit ?? .kilogram
+        let content = completed.generateExportContent(unit: unit)
+        let tempDir = FileManager.default.temporaryDirectory
+        let fileURL = tempDir.appendingPathComponent("SetLog_训练记录.md")
+        try? content.write(to: fileURL, atomically: true, encoding: .utf8)
+        exportFileURL = fileURL
+        showExportShare = true
     }
 
     private var syncNoticeCard: some View {
@@ -520,6 +586,16 @@ private func currentAppVersionText() -> String {
     let shortVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
     let buildNumber = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "1"
     return "v\(shortVersion) (\(buildNumber))"
+}
+
+private struct ShareSheet: UIViewControllerRepresentable {
+    let activityItems: [Any]
+
+    func makeUIViewController(context: Context) -> UIActivityViewController {
+        UIActivityViewController(activityItems: activityItems, applicationActivities: nil)
+    }
+
+    func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
 
 #Preview {

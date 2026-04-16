@@ -17,6 +17,7 @@ struct WorkoutRecordEditView: View {
     @State private var dragTranslation: CGFloat = 0
     @State private var cardHeights: [UUID: CGFloat] = [:]
     @State private var focusedSetRowID: UUID?
+    @State private var durationMinutes: String = ""
 
     let workout: WorkoutSession
 
@@ -81,6 +82,10 @@ struct WorkoutRecordEditView: View {
                 .safeAreaInset(edge: .top, spacing: 0) {
                     stickyHeader
                 }
+                .onAppear {
+                    let interval = (workout.dateEnded ?? workout.dateStarted).timeIntervalSince(workout.dateStarted)
+                    durationMinutes = "\(max(1, Int(interval / 60)))"
+                }
                 .sheet(isPresented: $isPresentingAddExercise) {
                     NavigationStack {
                         AddExerciseView(session: workout)
@@ -117,6 +122,7 @@ struct WorkoutRecordEditView: View {
         let onAdd:    () -> Void                = { [self] in addSet(to: exercise) }
         let onWMode:  () -> Void                = { [self] in toggleWeightMode(for: exercise) }
         let onSType:  (WorkoutSet) -> Void      = { [self] set in toggleSetType(for: set) }
+        let onDelSet: (WorkoutSet) -> Void      = { [self] set in deleteSet(set, from: exercise) }
         let onWarmup: () -> Void                = { [self] in addWarmupSet(to: exercise) }
         let onRepl:   () -> Void                = { [self] in exerciseToReplace = exercise }
         let onDel:    () -> Void                = { [self] in delete(exercise: exercise) }
@@ -147,8 +153,10 @@ struct WorkoutRecordEditView: View {
             onUpdateRest: onRest, onBeginEditingSet: onBegin,
             onCopyWeightRight: onWRight, onCopyWeightDown: onWDown, onCopyRepsDown: onRDown,
             onAddSet: onAdd, onToggleWeightMode: onWMode, onToggleSetType: onSType,
+            onDeleteSet: onDelSet,
             onAddWarmupSet: onWarmup, onReplaceExercise: onRepl, onDelete: onDel,
-            onDragActivated: onActivated, onDragChanged: onChanged, onDragEnded: onEnded
+            onDragActivated: onActivated, onDragChanged: onChanged, onDragEnded: onEnded,
+            forceEditableRest: true
         )
     }
 
@@ -170,9 +178,27 @@ struct WorkoutRecordEditView: View {
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
 
-                Text(dateText(for: workout.dateStarted))
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                HStack(spacing: 4) {
+                    Text(dateText(for: workout.dateStarted))
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    Text("·")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    HStack(spacing: 2) {
+                        TextField("0", text: $durationMinutes)
+                            .keyboardType(.numberPad)
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.orange)
+                            .frame(width: 32)
+                            .multilineTextAlignment(.trailing)
+                        Text("分钟")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -200,7 +226,10 @@ struct WorkoutRecordEditView: View {
 
     private func saveAndDismiss() {
         workout.isCompleted = true
-        if workout.dateEnded == nil {
+        if let minutes = Int(durationMinutes), minutes > 0 {
+            workout.dateEnded = workout.dateStarted.addingTimeInterval(TimeInterval(minutes * 60))
+            workout.workoutElapsedOffset = TimeInterval(minutes * 60)
+        } else if workout.dateEnded == nil {
             workout.dateEnded = workout.dateStarted
         }
         workout.updatedAt = Date.now
@@ -265,6 +294,16 @@ struct WorkoutRecordEditView: View {
         try? modelContext.save()
     }
 
+    private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutExercise) {
+        exercise.sets.removeAll { $0.id == set.id }
+        modelContext.delete(set)
+        let warmups = exercise.warmupSets
+        let workings = exercise.workingSets
+        for (i, s) in (warmups + workings).enumerated() { s.index = i + 1 }
+        workout.updatedAt = Date.now
+        try? modelContext.save()
+    }
+
     private func delete(exercise: WorkoutExercise) {
         if let index = workout.exercises.firstIndex(where: { $0.id == exercise.id }) {
             workout.exercises.remove(at: index)
@@ -292,6 +331,9 @@ struct WorkoutRecordEditView: View {
     }
 
     private func updateRest(for set: WorkoutSet, value: String) {
+        if let seconds = Int(value) {
+            set.recordedRestSeconds = seconds
+        }
         set.restAfter = TimeInterval(value) ?? set.restAfter
         workout.updatedAt = Date.now
         try? modelContext.save()
@@ -354,11 +396,12 @@ struct WorkoutRecordEditView: View {
     }
 
     private func addWarmupSet(to exercise: WorkoutExercise) {
+        let source = exercise.warmupSets.last
         let newSet = WorkoutSet(
             index: 0,
-            targetReps: exercise.orderedSets.first?.targetReps ?? 10,
-            weightKg: (exercise.orderedSets.first?.weightKg ?? 20) * 0.5,
-            restAfter: 45,
+            targetReps: source?.targetReps ?? exercise.workingSets.first?.targetReps ?? 10,
+            weightKg: source?.weightKg ?? (exercise.workingSets.first?.weightKg ?? 20) * 0.5,
+            restAfter: source?.restAfter ?? 45,
             setTypeRawValue: SetType.warmup.rawValue,
             exercise: exercise
         )

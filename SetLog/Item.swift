@@ -374,11 +374,6 @@ extension WorkoutSession {
 }
 
 extension WorkoutExercise {
-    var weightMode: ExerciseWeightMode {
-        get { ExerciseWeightMode(rawValue: weightModeRawValue ?? "") ?? .standard }
-        set { weightModeRawValue = newValue.rawValue }
-    }
-
     var orderedSets: [WorkoutSet] {
         sets.sorted { $0.index < $1.index }
     }
@@ -500,6 +495,64 @@ extension Double {
 extension WeightUnit {
     var displaySymbol: String {
         rawValue
+    }
+}
+
+// MARK: - Export
+
+extension WorkoutSession {
+    func exportMarkdown(unit: WeightUnit) -> String {
+        let dateFormatter = DateFormatter()
+        dateFormatter.locale = Locale(identifier: "zh_CN")
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+
+        let durationMin = max(1, Int((dateEnded ?? dateStarted).timeIntervalSince(dateStarted) / 60))
+
+        var md = "## \(dateFormatter.string(from: dateStarted)) - \(title)\n"
+        md += "时长: \(durationMin)分钟 | 总组数: \(totalSetCount) | 总容量: \(totalVolumeKg.formattedVolume(unit: unit))\n\n"
+
+        for exercise in orderedExercises {
+            let modeLabel = exercise.weightMode == .singleHand ? " [单手模式]" : ""
+            md += "### \(exercise.name) (\(exercise.category))\(modeLabel)\n"
+            md += "| 组 | 类型 | 重量(\(unit.displaySymbol.lowercased())) | 次数 | 休息(s) |\n"
+            md += "|----|------|----------|------|--------|\n"
+            for set in exercise.orderedSets {
+                let typeLabel = set.isWarmup ? "热身" : "正式"
+                let weight = set.weightKg.formattedWeight(unit: unit)
+                let reps = set.actualReps ?? set.targetReps ?? 0
+                let rest = set.recordedRestSeconds.map { "\($0)" } ?? "-"
+                md += "| \(set.index) | \(typeLabel) | \(weight) | \(reps) | \(rest) |\n"
+            }
+            md += "\n"
+        }
+
+        if !notes.isEmpty {
+            md += "备注: \(notes)\n\n"
+        }
+        return md
+    }
+}
+
+extension Array where Element == WorkoutSession {
+    func generateExportContent(unit: WeightUnit) -> String {
+        let sorted = self.filter { $0.isCompleted }.sorted { $0.dateStarted < $1.dateStarted }
+
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+
+        var md = "# SetLog 训练记录导出\n"
+        md += "导出时间: \(dateFormatter.string(from: Date()))\n"
+        md += "总训练次数: \(sorted.count)"
+        let totalVolume = sorted.reduce(0.0) { $0 + $1.totalVolumeKg }
+        md += " | 总容量: \(totalVolume.formattedVolume(unit: unit))\n\n"
+        md += "---\n\n"
+
+        for session in sorted {
+            md += session.exportMarkdown(unit: unit)
+            md += "---\n\n"
+        }
+
+        return md
     }
 }
 
