@@ -822,4 +822,5 @@ private enum HistoryRoute: Hashable {
 
 #Preview {
     ContentView()
+        .modelContainer(PreviewModelContainer.shared)
 }

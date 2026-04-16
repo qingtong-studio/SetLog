@@ -602,4 +602,5 @@ private struct ShareSheet: UIViewControllerRepresentable {
     NavigationStack {
         ProfileView()
     }
+    .modelContainer(PreviewModelContainer.shared)
 }

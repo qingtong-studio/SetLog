@@ -1796,7 +1796,7 @@ struct ExerciseReplacePickerView: View {
         .modelContainer(PreviewModelContainer.shared)
 }
 
-private enum PreviewModelContainer {
+enum PreviewModelContainer {
     static let shared: ModelContainer = {
         let schema = Schema([
             AppPreferences.self,

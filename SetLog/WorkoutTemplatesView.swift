@@ -242,26 +242,3 @@ private struct WorkoutTemplateCard: View {
             .modelContainer(PreviewModelContainer.shared)
     }
 }
-
-private enum PreviewModelContainer {
-    static let shared: ModelContainer = {
-        let schema = Schema([
-            AppPreferences.self,
-            WorkoutSession.self,
-            WorkoutExercise.self,
-            WorkoutSet.self,
-            ExerciseCatalogItem.self,
-            WorkoutTemplate.self,
-            TemplateExercise.self
-        ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
-
-        do {
-            let container = try ModelContainer(for: schema, configurations: [configuration])
-            try SampleDataSeeder.seedIfNeeded(in: container.mainContext)
-            return container
-        } catch {
-            fatalError("Failed to create preview container: \(error)")
-        }
-    }()
-}

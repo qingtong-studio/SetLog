@@ -343,4 +343,5 @@ private struct ExerciseGroupCard: View {
     NavigationStack {
         HistoryDetailView(sessionID: UUID())
     }
+    .modelContainer(PreviewModelContainer.shared)
 }

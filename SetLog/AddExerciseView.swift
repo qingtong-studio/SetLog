@@ -887,4 +887,5 @@ private struct AdjustableParameterField: View {
     NavigationStack {
         AddExerciseView(session: WorkoutSession(title: "Preview"))
     }
+    .modelContainer(PreviewModelContainer.shared)
 }

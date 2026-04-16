@@ -378,4 +378,5 @@ private struct HistoryRecordCard: View {
     NavigationStack {
         HistoryView()
     }
+    .modelContainer(PreviewModelContainer.shared)
 }
