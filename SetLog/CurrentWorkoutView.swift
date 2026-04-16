@@ -1039,28 +1039,6 @@ struct ExerciseEditorCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 18) {
             HStack(alignment: .top, spacing: 12) {
-                // Drag handle — gesture lives here only so ScrollView scrolls unimpeded elsewhere
-                Image(systemName: "line.3.horizontal")
-                    .font(.system(size: 13))
-                    .foregroundStyle(.quaternary)
-                    .frame(width: 28, height: 36)
-                    .contentShape(Rectangle())
-                    .simultaneousGesture(
-                        LongPressGesture(minimumDuration: 0.3)
-                            .sequenced(before: DragGesture(minimumDistance: 0))
-                            .onChanged { value in
-                                switch value {
-                                case .first(true):
-                                    onDragActivated()
-                                case .second(true, let drag?):
-                                    onDragChanged(drag.translation.height)
-                                default:
-                                    break
-                                }
-                            }
-                            .onEnded { _ in onDragEnded() }
-                    )
-
                 VStack(alignment: .leading, spacing: 6) {
                     HStack(spacing: 6) {
                         Text(exercise.name)
@@ -1069,43 +1047,13 @@ struct ExerciseEditorCard: View {
                             .lineLimit(1)
                             .minimumScaleFactor(0.85)
 
-                        if exercise.weightMode == .singleHand {
-                            Text("单手")
-                                .font(.system(size: 9, weight: .bold))
-                                .foregroundStyle(.orange)
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background(Color.orange.opacity(0.12))
-                                .clipShape(Capsule())
-                        }
+                        
                     }
                     .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
 
-                    Text(exercise.progressText)
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer()
-
-                Button(action: onAddWarmupSet) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 12))
-                        Text("+ 热身组")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.orange.opacity(0.18))
-                    .overlay(Capsule().stroke(Color.orange.opacity(0.5), lineWidth: 1))
-                    .clipShape(Capsule())
-                }
 
                 Menu {
                     Button(action: onToggleWeightMode) {
@@ -1130,6 +1078,23 @@ struct ExerciseEditorCard: View {
 
             // 重量模式切换
             HStack(spacing: 0) {
+                Text(exercise.progressText)
+                    .font(.system(size: 11, weight: .regular))
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                if exercise.weightMode == .singleHand {
+                    Text("单手")
+                        .font(.system(size: 9, weight: .bold))
+                        .foregroundStyle(.orange)
+                        .padding(.horizontal, 5)
+                        .padding(.vertical, 2)
+                        .background(Color.orange.opacity(0.12))
+                        .clipShape(Capsule())
+                }
+                Spacer()
+                
                 ForEach(ExerciseWeightMode.allCases, id: \.self) { mode in
                     let isSelected = exercise.weightMode == mode
                     Button {
@@ -1145,6 +1110,21 @@ struct ExerciseEditorCard: View {
                     }
                     .buttonStyle(.plain)
                     .animation(.easeInOut(duration: 0.15), value: exercise.weightMode)
+                }
+
+                Button(action: onAddWarmupSet) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 12))
+                        Text("+")
+                            .font(.system(size: 13, weight: .semibold))
+                    }
+                    .foregroundStyle(.orange)
+                    .padding(.horizontal, 12)
+                    .padding(.vertical, 7)
+                    .background(Color.orange.opacity(0.18))
+                    .overlay(Capsule().stroke(Color.orange.opacity(0.5), lineWidth: 1))
+                    .clipShape(Capsule())
                 }
             }
 
@@ -1218,15 +1198,6 @@ struct ExerciseEditorCard: View {
                 }
             }
             .buttonStyle(.plain)
-
-            HStack(spacing: 8) {
-                Image(systemName: "menucard")
-                    .font(.system(size: 16, weight: .regular))
-                Text("点击增加动作备注...")
-                    .font(.system(size: 13, weight: .regular))
-            }
-            .foregroundStyle(.tertiary)
-            .frame(maxWidth: .infinity, alignment: .trailing)
         }
         .padding(16)
         .background(Color(uiColor: .secondarySystemGroupedBackground))
@@ -1319,11 +1290,6 @@ struct WorkoutSetRow: View {
         isRestActive && !set.isCompleted && set.id != restSourceSetID
     }
 
-    // For single-hand mode, odd sets = 左, even sets = 右
-    private var handLabel: String {
-        self.set.index.isMultiple(of: 2) ? "右" : "左"
-    }
-
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: WorkoutCardLayout.columnSpacing) {
@@ -1357,11 +1323,6 @@ struct WorkoutSetRow: View {
                         onCopyRight: onCopyRight,
                         onCopyDown: onCopyDown
                     )
-                    if weightMode == .singleHand {
-                        Text(handLabel)
-                            .font(.system(size: 9, weight: .medium))
-                            .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
-                    }
                 }
                 .frame(maxWidth: .infinity)
                 EditableInputCell(
