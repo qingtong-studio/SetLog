@@ -5,6 +5,17 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
+private struct ShowToastKey: EnvironmentKey {
+    static let defaultValue: (String) -> Void = { _ in }
+}
+
+extension EnvironmentValues {
+    fileprivate var showToast: (String) -> Void {
+        get { self[ShowToastKey.self] }
+        set { self[ShowToastKey.self] = newValue }
+    }
+}
+
 private struct CardHeightKey: PreferenceKey {
     static let defaultValue: [UUID: CGFloat] = [:]
     static func reduce(value: inout [UUID: CGFloat], nextValue: () -> [UUID: CGFloat]) {
@@ -26,6 +37,8 @@ struct CurrentWorkoutView: View {
     @State private var focusedSetRowID: UUID?
     @State private var lastVibrationSecond: Int?
     @State private var summaryDisplayMode: SummaryDisplayMode?
+    @State private var toastMessage: String = ""
+    @State private var toastVisible = false
 
     enum SummaryDisplayMode {
         case fullscreen
@@ -99,6 +112,9 @@ struct CurrentWorkoutView: View {
                                     },
                                     onAddWarmupSet: {
                                         addWarmupSet(to: exercise, in: workout)
+                                    },
+                                    onUpdateDefaultRest: { seconds in
+                                        updateDefaultRest(for: exercise, seconds: seconds, in: workout)
                                     },
                                     onReplaceExercise: {
                                         exerciseToReplace = exercise
@@ -217,7 +233,22 @@ struct CurrentWorkoutView: View {
                 .transition(.opacity)
                 .zIndex(3)
             }
+
+            if toastVisible {
+                Text(toastMessage)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 18)
+                    .padding(.vertical, 10)
+                    .background(Color.black.opacity(0.82))
+                    .clipShape(Capsule())
+                    .padding(.bottom, workout.hasActiveRest ? 116 : 32)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+                    .allowsHitTesting(false)
+                    .zIndex(4)
+            }
         }
+        .environment(\.showToast, presentToast)
         .animation(.easeOut(duration: 0.24), value: workout.hasActiveRest)
         .animation(.easeOut(duration: 0.3), value: summaryDisplayMode != nil)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
@@ -978,6 +1009,22 @@ struct CurrentWorkoutView: View {
         .buttonStyle(.plain)
     }
 
+    private func presentToast(_ message: String) {
+        toastMessage = message
+        withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { toastVisible = true }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) {
+            withAnimation(.easeOut(duration: 0.25)) { toastVisible = false }
+        }
+    }
+
+    private func updateDefaultRest(for exercise: WorkoutExercise, seconds: Int, in workout: WorkoutSession) {
+        for set in exercise.workingSets {
+            set.restAfter = TimeInterval(seconds)
+        }
+        workout.updatedAt = now
+        try? modelContext.save()
+    }
+
     private func provideImpactFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle) {
         UIImpactFeedbackGenerator(style: style).impactOccurred()
     }
@@ -1026,6 +1073,7 @@ struct ExerciseEditorCard: View {
     let onToggleSetType: (WorkoutSet) -> Void
     let onDeleteSet: (WorkoutSet) -> Void
     let onAddWarmupSet: () -> Void
+    let onUpdateDefaultRest: (Int) -> Void
     let onReplaceExercise: () -> Void
     let onDelete: () -> Void
     let onDragActivated: () -> Void
@@ -1033,7 +1081,7 @@ struct ExerciseEditorCard: View {
     let onDragEnded: () -> Void
     var forceEditableRest: Bool = false
 
-    @State private var isEditingTimer = false
+    @State private var isShowingEditRestSheet = false
 
     private var weightColumnTitle: String {
         exercise.weightMode == .singleHand ? "单手重" : "重量"
@@ -1092,8 +1140,8 @@ struct ExerciseEditorCard: View {
 
                 // 更多菜单
                 Menu {
-                    Button(action: { isEditingTimer.toggle() }) {
-                        Label(isEditingTimer ? "完成计时编辑" : "修改计时", systemImage: "timer")
+                    Button(action: { isShowingEditRestSheet = true }) {
+                        Label("修改计时", systemImage: "timer")
                     }
                     Button(action: onReplaceExercise) {
                         Label("替换动作", systemImage: "arrow.2.squarepath")
@@ -1161,7 +1209,7 @@ struct ExerciseEditorCard: View {
                         onCopyRepsDown: { onCopyRepsDown(item) },
                         onToggleSetType: { onToggleSetType(item) },
                         onDeleteSet: { onDeleteSet(item) },
-                        forceEditableRest: forceEditableRest || isEditingTimer
+                        forceEditableRest: forceEditableRest
                     )
                 }
             }
@@ -1199,6 +1247,12 @@ struct ExerciseEditorCard: View {
         .shadow(color: isDragging ? Color.black.opacity(0.15) : Color.black.opacity(0.03), radius: isDragging ? 16 : 8, y: isDragging ? 6 : 3)
         .scaleEffect(isDragging ? 1.02 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
+        .sheet(isPresented: $isShowingEditRestSheet) {
+            EditDefaultRestSheet(
+                currentSeconds: Int(exercise.workingSets.first?.restAfter ?? 90),
+                onConfirm: onUpdateDefaultRest
+            )
+        }
     }
 
     private var symbolName: String {
@@ -1255,9 +1309,8 @@ struct WorkoutSetRow: View {
     var onDeleteSet: (() -> Void)? = nil
     var forceEditableRest: Bool = false
 
-    @State private var showCompletedHint = false
     @State private var restIsLongPressEditable = false
-    @State private var showRestHint = false
+    @Environment(\.showToast) private var showToast
 
     private var weightDisplayValue: String {
         let baseKg = set.weightKg
@@ -1340,96 +1393,62 @@ struct WorkoutSetRow: View {
                         activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
                         inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
                         onBeginEditing: onBeginEditing,
-                        onCommit: onUpdateRest
+                        onCommit: onUpdateRest,
+                        onEndEditing: {
+                            restIsLongPressEditable = false
+                        }
                     )
                     if restLocked {
                         Color.clear
                             .frame(width: WorkoutCardLayout.restCellWidth, height: 36)
                             .contentShape(Rectangle())
                             .onTapGesture {
-                                withAnimation(.easeInOut(duration: 0.15)) { showRestHint = true }
+                                showToast("长按修改休息时间")
                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                                    withAnimation(.easeInOut(duration: 0.15)) { showRestHint = false }
-                                }
                             }
                             .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                withAnimation { showRestHint = false }
                                 restIsLongPressEditable = true
                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                             })
                     }
                 }
-                .overlay(alignment: .top) {
-                    if showRestHint {
-                        Text("长按修改")
-                            .font(.system(size: 10, weight: .semibold))
-                            .foregroundStyle(.white)
-                            .padding(.horizontal, 7)
-                            .padding(.vertical, 3)
-                            .background(Color.black.opacity(0.78))
-                            .clipShape(Capsule())
-                            .offset(y: -20)
-                            .transition(.opacity.combined(with: .scale(scale: 0.88, anchor: .bottom)))
-                            .allowsHitTesting(false)
-                    }
-                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Status circle — tap shows hint if completed, long press cancels
-            ZStack {
-                Circle()
-                    .fill(set.isCompleted ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color.clear)
-                    .background(
-                        Circle()
-                            .stroke(set.isCompleted ? Color.clear : Color(.systemGray3), lineWidth: 2)
-                    )
-                    .overlay {
-                        if set.isCompleted {
-                            Image(systemName: "checkmark")
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundStyle(.white)
-                        }
+            // Status circle — tap to complete; tap completed shows toast; long press cancels
+            Circle()
+                .fill(set.isCompleted ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color.clear)
+                .background(
+                    Circle()
+                        .stroke(set.isCompleted ? Color.clear : Color(.systemGray3), lineWidth: 2)
+                )
+                .overlay {
+                    if set.isCompleted {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.white)
                     }
-                    .frame(width: 28, height: 28)
-
-                if showCompletedHint {
-                    Text("长按取消")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 7)
-                        .padding(.vertical, 3)
-                        .background(Color.black.opacity(0.78))
-                        .clipShape(Capsule())
-                        .offset(y: -28)
-                        .transition(.opacity.combined(with: .scale(scale: 0.88, anchor: .bottom)))
-                        .allowsHitTesting(false)
                 }
-            }
-            .frame(width: WorkoutCardLayout.statusWidth, height: 40)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                guard !isToggleLocked else { return }
-                if set.isCompleted {
-                    withAnimation(.easeInOut(duration: 0.15)) { showCompletedHint = true }
-                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
-                        withAnimation(.easeInOut(duration: 0.15)) { showCompletedHint = false }
+                .frame(width: 28, height: 28)
+                .frame(width: WorkoutCardLayout.statusWidth, height: 40)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    guard !isToggleLocked else { return }
+                    if set.isCompleted {
+                        showToast("长按取消完成状态")
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    } else {
+                        onToggle()
                     }
-                } else {
-                    onToggle()
                 }
-            }
-            .simultaneousGesture(
-                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                    guard set.isCompleted, !isToggleLocked else { return }
-                    withAnimation { showCompletedHint = false }
-                    onToggle()
-                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                }
-            )
-            .opacity(isToggleLocked ? 0.3 : 1.0)
+                .simultaneousGesture(
+                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                        guard set.isCompleted, !isToggleLocked else { return }
+                        onToggle()
+                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                    }
+                )
+                .opacity(isToggleLocked ? 0.3 : 1.0)
         }
         .padding(.vertical, set.isWarmup ? 2 : 0)
         .background(Color.clear)
@@ -1521,6 +1540,7 @@ private struct EditableInputCell: View {
     let onCommit: (String) -> Void
     var onCopyRight: (() -> Void)?
     var onCopyDown: (() -> Void)?
+    var onEndEditing: (() -> Void)?
 
     var body: some View {
         SelectAllTextField(
@@ -1531,6 +1551,7 @@ private struct EditableInputCell: View {
             textColor: UIColor(isEditable ? activeTextColor : inactiveTextColor),
             onBeginEditing: onBeginEditing,
             onCommit: onCommit,
+            onEndEditing: onEndEditing,
             onCopyRight: onCopyRight,
             onCopyDown: onCopyDown
         )
@@ -1549,11 +1570,12 @@ private struct SelectAllTextField: UIViewRepresentable {
     let textColor: UIColor
     let onBeginEditing: () -> Void
     let onCommit: (String) -> Void
+    var onEndEditing: (() -> Void)?
     var onCopyRight: (() -> Void)?
     var onCopyDown: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onBeginEditing: onBeginEditing, onCommit: onCommit, valueKind: valueKind)
+        Coordinator(onBeginEditing: onBeginEditing, onCommit: onCommit, onEndEditing: onEndEditing, valueKind: valueKind)
     }
 
     func makeUIView(context: Context) -> HiddenCaretTextField {
@@ -1583,9 +1605,14 @@ private struct SelectAllTextField: UIViewRepresentable {
             textField.text = value
         }
         textField.textColor = textColor
+        let wasEditable = textField.isUserInteractionEnabled
         textField.isUserInteractionEnabled = isEditable
+        if isEditable && !wasEditable {
+            DispatchQueue.main.async { _ = textField.becomeFirstResponder() }
+        }
         context.coordinator.onBeginEditing = onBeginEditing
         context.coordinator.onCommit = onCommit
+        context.coordinator.onEndEditing = onEndEditing
         context.coordinator.valueKind = valueKind
 
         if let keyboard = context.coordinator.keyboard {
@@ -1607,12 +1634,14 @@ private struct SelectAllTextField: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var onBeginEditing: () -> Void
         var onCommit: (String) -> Void
+        var onEndEditing: (() -> Void)?
         var valueKind: InputValueKind
         weak var keyboard: NumericKeyboardInputView?
 
-        init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void, valueKind: InputValueKind) {
+        init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void, onEndEditing: (() -> Void)?, valueKind: InputValueKind) {
             self.onBeginEditing = onBeginEditing
             self.onCommit = onCommit
+            self.onEndEditing = onEndEditing
             self.valueKind = valueKind
         }
 
@@ -1626,6 +1655,7 @@ private struct SelectAllTextField: UIViewRepresentable {
 
         func textFieldDidEndEditing(_ textField: UITextField) {
             commit(textField)
+            onEndEditing?()
         }
 
         func textFieldShouldReturn(_ textField: UITextField) -> Bool {
@@ -1802,6 +1832,70 @@ private struct WorkoutSummaryOverlay: View {
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.6))
         }
+    }
+}
+
+private struct EditDefaultRestSheet: View {
+    let currentSeconds: Int
+    let onConfirm: (Int) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+
+    init(currentSeconds: Int, onConfirm: @escaping (Int) -> Void) {
+        self.currentSeconds = currentSeconds
+        self.onConfirm = onConfirm
+        _text = State(initialValue: "\(currentSeconds)")
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 10) {
+                    Text("正式组默认休息时间")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(.secondary)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        TextField("", text: $text)
+                            .keyboardType(.numberPad)
+                            .multilineTextAlignment(.center)
+                            .font(.system(size: 52, weight: .black, design: .rounded))
+                            .frame(width: 120)
+                        Text("秒")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Spacer()
+
+                Button(action: {
+                    if let s = Int(text), s > 0 { onConfirm(s) }
+                    dismiss()
+                }) {
+                    Text("确认")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(Color(red: 1.0, green: 0.45, blue: 0.08))
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+            .navigationTitle("修改计时")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.height(260)])
+        .presentationDragIndicator(.visible)
     }
 }
 

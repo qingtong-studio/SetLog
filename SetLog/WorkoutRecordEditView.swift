@@ -154,7 +154,7 @@ struct WorkoutRecordEditView: View {
             onCopyWeightRight: onWRight, onCopyWeightDown: onWDown, onCopyRepsDown: onRDown,
             onAddSet: onAdd, onToggleWeightMode: onWMode, onToggleSetType: onSType,
             onDeleteSet: onDelSet,
-            onAddWarmupSet: onWarmup, onReplaceExercise: onRepl, onDelete: onDel,
+            onAddWarmupSet: onWarmup, onUpdateDefaultRest: { _ in }, onReplaceExercise: onRepl, onDelete: onDel,
             onDragActivated: onActivated, onDragChanged: onChanged, onDragEnded: onEnded,
             forceEditableRest: true
         )
