@@ -916,23 +916,24 @@ struct CurrentWorkoutView: View {
     }
 
     private func addWarmupSet(to exercise: WorkoutExercise, in workout: WorkoutSession) {
-        let source = exercise.warmupSets.last
+        let existingWarmups = exercise.warmupSets
+        let source = existingWarmups.last
         let newSet = WorkoutSet(
-            index: 0,
+            index: existingWarmups.count + 1,
             targetReps: source?.targetReps ?? exercise.workingSets.first?.targetReps ?? 10,
             weightKg: source?.weightKg ?? (exercise.workingSets.first?.weightKg ?? 20) * 0.5,
-            restAfter: source?.restAfter ?? 45,
+            restAfter: source?.restAfter ?? 60,
             setTypeRawValue: SetType.warmup.rawValue,
             exercise: exercise
         )
         exercise.sets.append(newSet)
-        // Reindex: warmup sets first, then working sets
-        for (i, ws) in exercise.warmupSets.enumerated() {
+        // Reindex: existing warmups, then new warmup at bottom, then working sets
+        for (i, ws) in existingWarmups.enumerated() {
             ws.index = i + 1
         }
-        let warmupEnd = exercise.warmupSets.count
+        newSet.index = existingWarmups.count + 1
         for (i, ws) in exercise.workingSets.enumerated() {
-            ws.index = warmupEnd + i + 1
+            ws.index = existingWarmups.count + 1 + i + 1
         }
         workout.updatedAt = now
         try? modelContext.save()
@@ -1032,6 +1033,8 @@ struct ExerciseEditorCard: View {
     let onDragEnded: () -> Void
     var forceEditableRest: Bool = false
 
+    @State private var isEditingTimer = false
+
     private var weightColumnTitle: String {
         exercise.weightMode == .singleHand ? "单手重" : "重量"
     }
@@ -1057,27 +1060,41 @@ struct ExerciseEditorCard: View {
                             .font(.system(size: 11, weight: .semibold))
                     }
                     .foregroundStyle(isActive ? .white : Color(uiColor: .secondaryLabel))
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 6)
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
                     .background(isActive ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiarySystemFill))
                     .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(isActive ? Color.clear : Color(.systemGray4), lineWidth: 1)
+                    )
                 }
                 .buttonStyle(.plain)
                 .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
 
                 // 热身组按钮
                 Button(action: onAddWarmupSet) {
-                    Image(systemName: "flame.fill")
-                        .font(.system(size: 12))
-                        .foregroundStyle(.orange)
-                        .frame(width: 32, height: 32)
-                        .background(Color.orange.opacity(0.15))
-                        .clipShape(Circle())
+                    HStack(spacing: 3) {
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: 11))
+                        Text("热身")
+                            .font(.system(size: 11, weight: .semibold))
+                    }
+                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .padding(.horizontal, 9)
+                    .padding(.vertical, 5)
+                    .background(Color(uiColor: .tertiarySystemFill))
+                    .clipShape(Capsule())
+                    .overlay(
+                        Capsule().stroke(Color(.systemGray4), lineWidth: 1)
+                    )
                 }
                 .buttonStyle(.plain)
 
                 // 更多菜单
                 Menu {
+                    Button(action: { isEditingTimer.toggle() }) {
+                        Label(isEditingTimer ? "完成计时编辑" : "修改计时", systemImage: "timer")
+                    }
                     Button(action: onReplaceExercise) {
                         Label("替换动作", systemImage: "arrow.2.squarepath")
                     }
@@ -1144,7 +1161,7 @@ struct ExerciseEditorCard: View {
                         onCopyRepsDown: { onCopyRepsDown(item) },
                         onToggleSetType: { onToggleSetType(item) },
                         onDeleteSet: { onDeleteSet(item) },
-                        forceEditableRest: forceEditableRest
+                        forceEditableRest: forceEditableRest || isEditingTimer
                     )
                 }
             }
@@ -1238,6 +1255,10 @@ struct WorkoutSetRow: View {
     var onDeleteSet: (() -> Void)? = nil
     var forceEditableRest: Bool = false
 
+    @State private var showCompletedHint = false
+    @State private var restIsLongPressEditable = false
+    @State private var showRestHint = false
+
     private var weightDisplayValue: String {
         let baseKg = set.weightKg
         let displayKg = weightMode == .singleHand ? baseKg / 2 : baseKg
@@ -1250,10 +1271,6 @@ struct WorkoutSetRow: View {
 
     private var indexColor: Color {
         self.set.isWarmup ? .orange : Color.primary
-    }
-
-    private var rowBackground: Color {
-        Color.clear
     }
 
     private var isToggleLocked: Bool {
@@ -1306,24 +1323,62 @@ struct WorkoutSetRow: View {
                     onCommit: onUpdateReps,
                     onCopyDown: onCopyRepsDown
                 )
+
                 let isRestSource = isRestActive && set.id == restSourceSetID
-                EditableInputCell(
-                    value: forceEditableRest
-                        ? (set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))")
-                        : (isRestSource ? "..." : set.completedRestDisplay),
-                    valueKind: .rest,
-                    keyboardType: .numberPad,
-                    width: WorkoutCardLayout.restCellWidth,
-                    isEditable: set.canEditRecordedRest || forceEditableRest,
-                    activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
-                    inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
-                    onBeginEditing: onBeginEditing,
-                    onCommit: onUpdateRest
-                )
+                let restEditable = forceEditableRest || restIsLongPressEditable
+                let restLocked = set.canEditRecordedRest && !restEditable
+
+                ZStack {
+                    EditableInputCell(
+                        value: restEditable
+                            ? (set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))")
+                            : (isRestSource ? "..." : set.completedRestDisplay),
+                        valueKind: .rest,
+                        keyboardType: .numberPad,
+                        width: WorkoutCardLayout.restCellWidth,
+                        isEditable: restEditable,
+                        activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
+                        inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
+                        onBeginEditing: onBeginEditing,
+                        onCommit: onUpdateRest
+                    )
+                    if restLocked {
+                        Color.clear
+                            .frame(width: WorkoutCardLayout.restCellWidth, height: 36)
+                            .contentShape(Rectangle())
+                            .onTapGesture {
+                                withAnimation(.easeInOut(duration: 0.15)) { showRestHint = true }
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                                    withAnimation(.easeInOut(duration: 0.15)) { showRestHint = false }
+                                }
+                            }
+                            .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                                withAnimation { showRestHint = false }
+                                restIsLongPressEditable = true
+                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                            })
+                    }
+                }
+                .overlay(alignment: .top) {
+                    if showRestHint {
+                        Text("长按修改")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 7)
+                            .padding(.vertical, 3)
+                            .background(Color.black.opacity(0.78))
+                            .clipShape(Capsule())
+                            .offset(y: -20)
+                            .transition(.opacity.combined(with: .scale(scale: 0.88, anchor: .bottom)))
+                            .allowsHitTesting(false)
+                    }
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            Button(action: onToggle) {
+            // Status circle — tap shows hint if completed, long press cancels
+            ZStack {
                 Circle()
                     .fill(set.isCompleted ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color.clear)
                     .background(
@@ -1338,14 +1393,46 @@ struct WorkoutSetRow: View {
                         }
                     }
                     .frame(width: 28, height: 28)
-                    .frame(width: WorkoutCardLayout.statusWidth, height: 40)
-                    .contentShape(Rectangle())
+
+                if showCompletedHint {
+                    Text("长按取消")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 3)
+                        .background(Color.black.opacity(0.78))
+                        .clipShape(Capsule())
+                        .offset(y: -28)
+                        .transition(.opacity.combined(with: .scale(scale: 0.88, anchor: .bottom)))
+                        .allowsHitTesting(false)
+                }
             }
-            .buttonStyle(.plain)
+            .frame(width: WorkoutCardLayout.statusWidth, height: 40)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard !isToggleLocked else { return }
+                if set.isCompleted {
+                    withAnimation(.easeInOut(duration: 0.15)) { showCompletedHint = true }
+                    UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 1.5) {
+                        withAnimation(.easeInOut(duration: 0.15)) { showCompletedHint = false }
+                    }
+                } else {
+                    onToggle()
+                }
+            }
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                    guard set.isCompleted, !isToggleLocked else { return }
+                    withAnimation { showCompletedHint = false }
+                    onToggle()
+                    UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                }
+            )
             .opacity(isToggleLocked ? 0.3 : 1.0)
         }
         .padding(.vertical, set.isWarmup ? 2 : 0)
-        .background(rowBackground)
+        .background(Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .id(set.id)
     }
