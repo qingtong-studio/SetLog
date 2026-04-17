@@ -628,7 +628,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func updateWeight(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard let parsedValue = Double(value), parsedValue >= 0 else {
+        guard let parsedValue = InputValueSanitizer.parseWeight(value) else {
             return
         }
 
@@ -640,7 +640,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func updateReps(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard let parsedValue = Int(value), parsedValue >= 0 else {
+        guard let parsedValue = InputValueSanitizer.parseInteger(value) else {
             return
         }
 
@@ -650,7 +650,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func updateRest(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard set.canEditRecordedRest, let parsedValue = Int(value), parsedValue >= 0 else {
+        guard set.canEditRecordedRest, let parsedValue = InputValueSanitizer.parseInteger(value) else {
             return
         }
 
@@ -1037,31 +1037,47 @@ struct ExerciseEditorCard: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    HStack(spacing: 6) {
-                        Text(exercise.name)
-                            .font(.system(size: 16, weight: .regular))
-                            .foregroundStyle(.primary)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.85)
+        VStack(alignment: .leading, spacing: 14) {
+            // Header: name + action buttons
+            HStack(alignment: .center, spacing: 8) {
+                Text(exercise.name)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                        
+                // 单手模式切换按钮
+                Button(action: onToggleWeightMode) {
+                    let isActive = exercise.weightMode == .singleHand
+                    HStack(spacing: 3) {
+                        Image(systemName: "hand.raised.fill")
+                            .font(.system(size: 11))
+                        Text("单手")
+                            .font(.system(size: 11, weight: .semibold))
                     }
-                    .frame(maxWidth: .infinity, minHeight: 24, alignment: .leading)
-
+                    .foregroundStyle(isActive ? .white : Color(uiColor: .secondaryLabel))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(isActive ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiarySystemFill))
+                    .clipShape(Capsule())
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .buttonStyle(.plain)
+                .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
 
+                // 热身组按钮
+                Button(action: onAddWarmupSet) {
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: 12))
+                        .foregroundStyle(.orange)
+                        .frame(width: 32, height: 32)
+                        .background(Color.orange.opacity(0.15))
+                        .clipShape(Circle())
+                }
+                .buttonStyle(.plain)
 
+                // 更多菜单
                 Menu {
-                    Button(action: onToggleWeightMode) {
-                        Label(
-                            exercise.weightMode == .standard ? "切换为单手重量" : "切换为总重量",
-                            systemImage: exercise.weightMode == .standard ? "arrow.left.arrow.right" : "equal.circle"
-                        )
-                    }
                     Button(action: onReplaceExercise) {
                         Label("替换动作", systemImage: "arrow.2.squarepath")
                     }
@@ -1070,65 +1086,20 @@ struct ExerciseEditorCard: View {
                     }
                 } label: {
                     Image(systemName: "ellipsis")
-                        .font(.system(size: 14, weight: .regular))
-                        .foregroundStyle(Color(uiColor: .label))
-                        .frame(width: 29, height: 32)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                        .frame(width: 32, height: 32)
                 }
             }
 
-            // 重量模式切换
-            HStack(spacing: 0) {
-                Text(exercise.progressText)
-                    .font(.system(size: 11, weight: .regular))
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                if exercise.weightMode == .singleHand {
-                    Text("单手")
-                        .font(.system(size: 9, weight: .bold))
-                        .foregroundStyle(.orange)
-                        .padding(.horizontal, 5)
-                        .padding(.vertical, 2)
-                        .background(Color.orange.opacity(0.12))
-                        .clipShape(Capsule())
-                }
-                Spacer()
-                
-                ForEach(ExerciseWeightMode.allCases, id: \.self) { mode in
-                    let isSelected = exercise.weightMode == mode
-                    Button {
-                        if !isSelected { onToggleWeightMode() }
-                    } label: {
-                        Text(mode.displayName)
-                            .font(.system(size: 11, weight: isSelected ? .medium : .regular))
-                            .foregroundStyle(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(red: 0.50, green: 0.53, blue: 0.58))
-                            .padding(.horizontal, 10)
-                            .padding(.vertical, 4)
-                            .background(isSelected ? Color(red: 1.0, green: 0.45, blue: 0.08).opacity(0.10) : Color.clear)
-                            .clipShape(Capsule())
-                    }
-                    .buttonStyle(.plain)
-                    .animation(.easeInOut(duration: 0.15), value: exercise.weightMode)
-                }
+            // Progress text
+            Text(exercise.progressText)
+                .font(.system(size: 12, weight: .regular))
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .minimumScaleFactor(0.85)
 
-                Button(action: onAddWarmupSet) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 12))
-                        Text("+")
-                            .font(.system(size: 13, weight: .semibold))
-                    }
-                    .foregroundStyle(.orange)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 7)
-                    .background(Color.orange.opacity(0.18))
-                    .overlay(Capsule().stroke(Color.orange.opacity(0.5), lineWidth: 1))
-                    .clipShape(Capsule())
-                }
-            }
-
-            VStack(spacing: 12) {
+            VStack(spacing: 10) {
                 HStack(spacing: 0) {
                     HStack(spacing: WorkoutCardLayout.columnSpacing) {
                         Text("组")
@@ -1140,19 +1111,20 @@ struct ExerciseEditorCard: View {
                                     .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .center)
+                        .frame(width: WorkoutCardLayout.weightCellWidth, alignment: .center)
                         Text("次数")
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .frame(width: WorkoutCardLayout.repsCellWidth, alignment: .center)
                         Text("休息")
-                            .frame(maxWidth: .infinity, alignment: .center)
+                            .frame(width: WorkoutCardLayout.restCellWidth, alignment: .center)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text("状态")
                         .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
                 }
-                .font(.system(size: 10, weight: .regular))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 10, weight: .medium))
+                .foregroundStyle(.tertiary)
+                .textCase(.uppercase)
 
                 ForEach(exercise.orderedSets) { item in
                     WorkoutSetRow(
@@ -1181,32 +1153,33 @@ struct ExerciseEditorCard: View {
                 HStack(spacing: 0) {
                     HStack(spacing: WorkoutCardLayout.columnSpacing) {
                         Text("\(exercise.orderedSets.count + 1)")
-                            .font(.system(size: 14, weight: .regular))
-                            .foregroundStyle(.tertiary)
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(.quaternary)
                             .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
 
-                        AddPlaceholderCell()
-                        AddPlaceholderCell()
-                        AddPlaceholderCell()
+                        AddPlaceholderCell(width: WorkoutCardLayout.weightCellWidth)
+                        AddPlaceholderCell(width: WorkoutCardLayout.repsCellWidth)
+                        AddPlaceholderCell(width: WorkoutCardLayout.restCellWidth)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
 
                     Circle()
-                        .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
-                        .frame(width: 28, height: 28)
+                        .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                        .frame(width: 26, height: 26)
                         .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
                 }
             }
             .buttonStyle(.plain)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 14)
         .background(Color(uiColor: .secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(isDragging ? Color.orange.opacity(0.3) : Color.black.opacity(0.05), lineWidth: isDragging ? 2 : 1)
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .stroke(isDragging ? Color.orange.opacity(0.3) : Color.black.opacity(0.04), lineWidth: isDragging ? 2 : 0.5)
         )
-        .shadow(color: isDragging ? Color.black.opacity(0.18) : Color.black.opacity(0.04), radius: isDragging ? 18 : 10, y: isDragging ? 8 : 5)
+        .shadow(color: isDragging ? Color.black.opacity(0.15) : Color.black.opacity(0.03), radius: isDragging ? 16 : 8, y: isDragging ? 6 : 3)
         .scaleEffect(isDragging ? 1.02 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
     }
@@ -1268,7 +1241,7 @@ struct WorkoutSetRow: View {
     private var weightDisplayValue: String {
         let baseKg = set.weightKg
         let displayKg = weightMode == .singleHand ? baseKg / 2 : baseKg
-        return displayKg.formattedWeight(unit: weightUnit)
+        return displayKg.formattedWeight(unit: weightUnit, fractionDigits: 2)
     }
 
     private var indexLabel: String {
@@ -1280,10 +1253,7 @@ struct WorkoutSetRow: View {
     }
 
     private var rowBackground: Color {
-        if isRestActive && set.id == restSourceSetID {
-            return Color.orange.opacity(0.10)
-        }
-        return self.set.isWarmup ? Color.orange.opacity(0.04) : Color.clear
+        Color.clear
     }
 
     private var isToggleLocked: Bool {
@@ -1311,23 +1281,24 @@ struct WorkoutSetRow: View {
                         }
                     }
 
-                VStack(spacing: 1) {
-                    EditableInputCell(
-                        value: weightDisplayValue,
-                        keyboardType: .decimalPad,
-                        isEditable: true,
-                        activeTextColor: Color(uiColor: .label),
-                        inactiveTextColor: Color(uiColor: .label),
-                        onBeginEditing: onBeginEditing,
-                        onCommit: onUpdateWeight,
-                        onCopyRight: onCopyRight,
-                        onCopyDown: onCopyDown
-                    )
-                }
-                .frame(maxWidth: .infinity)
+                EditableInputCell(
+                    value: weightDisplayValue,
+                    valueKind: .weight,
+                    keyboardType: .decimalPad,
+                    width: WorkoutCardLayout.weightCellWidth,
+                    isEditable: true,
+                    activeTextColor: Color(uiColor: .label),
+                    inactiveTextColor: Color(uiColor: .label),
+                    onBeginEditing: onBeginEditing,
+                    onCommit: onUpdateWeight,
+                    onCopyRight: onCopyRight,
+                    onCopyDown: onCopyDown
+                )
                 EditableInputCell(
                     value: set.repsDisplay,
+                    valueKind: .reps,
                     keyboardType: .numberPad,
+                    width: WorkoutCardLayout.repsCellWidth,
                     isEditable: true,
                     activeTextColor: Color(uiColor: .label),
                     inactiveTextColor: Color(uiColor: .label),
@@ -1340,7 +1311,9 @@ struct WorkoutSetRow: View {
                     value: forceEditableRest
                         ? (set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))")
                         : (isRestSource ? "..." : set.completedRestDisplay),
+                    valueKind: .rest,
                     keyboardType: .numberPad,
+                    width: WorkoutCardLayout.restCellWidth,
                     isEditable: set.canEditRecordedRest || forceEditableRest,
                     activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
                     inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
@@ -1378,9 +1351,82 @@ struct WorkoutSetRow: View {
     }
 }
 
+private enum InputValueKind {
+    case weight
+    case reps
+    case rest
+}
+
+private enum InputValueSanitizer {
+    private static let maxWeightIntegerDigits = 3
+    private static let maxWeightFractionDigits = 2
+    private static let maxIntegerDigits = 3
+    private static let maxWeightValue = 999.99
+    private static let maxIntegerValue = 999
+
+    static func sanitize(_ text: String, kind: InputValueKind) -> String {
+        switch kind {
+        case .weight:
+            return sanitizeWeight(text)
+        case .reps, .rest:
+            return sanitizeInteger(text)
+        }
+    }
+
+    static func parseWeight(_ text: String) -> Double? {
+        let sanitized = sanitizeWeight(text)
+        let normalized = sanitized.hasSuffix(".") ? String(sanitized.dropLast()) : sanitized
+        guard !normalized.isEmpty, let value = Double(normalized), value >= 0, value <= maxWeightValue else {
+            return nil
+        }
+        return value
+    }
+
+    static func parseInteger(_ text: String) -> Int? {
+        let sanitized = sanitizeInteger(text)
+        guard !sanitized.isEmpty, let value = Int(sanitized), value >= 0, value <= maxIntegerValue else {
+            return nil
+        }
+        return value
+    }
+
+    private static func sanitizeWeight(_ text: String) -> String {
+        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: ".")
+        var integerPart = ""
+        var fractionPart = ""
+        var hasDot = false
+
+        for char in normalized {
+            if char.isNumber {
+                if hasDot {
+                    if fractionPart.count < maxWeightFractionDigits {
+                        fractionPart.append(char)
+                    }
+                } else if integerPart.count < maxWeightIntegerDigits {
+                    integerPart.append(char)
+                }
+            } else if char == "." && !hasDot {
+                hasDot = true
+            }
+        }
+
+        if hasDot {
+            let safeIntegerPart = integerPart.isEmpty ? "0" : integerPart
+            return "\(safeIntegerPart).\(fractionPart)"
+        }
+        return integerPart
+    }
+
+    private static func sanitizeInteger(_ text: String) -> String {
+        String(text.filter(\.isNumber).prefix(maxIntegerDigits))
+    }
+}
+
 private struct EditableInputCell: View {
     let value: String
+    let valueKind: InputValueKind
     let keyboardType: UIKeyboardType
+    let width: CGFloat
     let isEditable: Bool
     let activeTextColor: Color
     let inactiveTextColor: Color
@@ -1392,6 +1438,7 @@ private struct EditableInputCell: View {
     var body: some View {
         SelectAllTextField(
             value: value,
+            valueKind: valueKind,
             keyboardType: keyboardType,
             isEditable: isEditable,
             textColor: UIColor(isEditable ? activeTextColor : inactiveTextColor),
@@ -1400,7 +1447,7 @@ private struct EditableInputCell: View {
             onCopyRight: onCopyRight,
             onCopyDown: onCopyDown
         )
-            .frame(maxWidth: .infinity)
+            .frame(width: width)
             .frame(height: 36)
             .background(Color(uiColor: .tertiarySystemFill))
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -1409,6 +1456,7 @@ private struct EditableInputCell: View {
 
 private struct SelectAllTextField: UIViewRepresentable {
     let value: String
+    let valueKind: InputValueKind
     let keyboardType: UIKeyboardType
     let isEditable: Bool
     let textColor: UIColor
@@ -1418,7 +1466,7 @@ private struct SelectAllTextField: UIViewRepresentable {
     var onCopyDown: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onBeginEditing: onBeginEditing, onCommit: onCommit)
+        Coordinator(onBeginEditing: onBeginEditing, onCommit: onCommit, valueKind: valueKind)
     }
 
     func makeUIView(context: Context) -> HiddenCaretTextField {
@@ -1427,9 +1475,9 @@ private struct SelectAllTextField: UIViewRepresentable {
         textField.textAlignment = .center
         textField.borderStyle = .none
         textField.backgroundColor = .clear
-        textField.font = .systemFont(ofSize: 15, weight: .regular)
-        textField.adjustsFontSizeToFitWidth = true
-        textField.minimumFontSize = 11
+        textField.font = .systemFont(ofSize: WorkoutCardLayout.inputFontSize, weight: .regular)
+        textField.adjustsFontSizeToFitWidth = false
+        textField.keyboardType = keyboardType
         textField.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
 
         let keyboard = NumericKeyboardInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 280))
@@ -1451,6 +1499,7 @@ private struct SelectAllTextField: UIViewRepresentable {
         textField.isUserInteractionEnabled = isEditable
         context.coordinator.onBeginEditing = onBeginEditing
         context.coordinator.onCommit = onCommit
+        context.coordinator.valueKind = valueKind
 
         if let keyboard = context.coordinator.keyboard {
             keyboard.onCopyRight = onCopyRight
@@ -1471,11 +1520,13 @@ private struct SelectAllTextField: UIViewRepresentable {
     final class Coordinator: NSObject, UITextFieldDelegate {
         var onBeginEditing: () -> Void
         var onCommit: (String) -> Void
+        var valueKind: InputValueKind
         weak var keyboard: NumericKeyboardInputView?
 
-        init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void) {
+        init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void, valueKind: InputValueKind) {
             self.onBeginEditing = onBeginEditing
             self.onCommit = onCommit
+            self.valueKind = valueKind
         }
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
@@ -1496,12 +1547,19 @@ private struct SelectAllTextField: UIViewRepresentable {
             return true
         }
 
-        @objc func textDidChange(_ textField: UITextField) {}
+        @objc func textDidChange(_ textField: UITextField) {
+            let current = textField.text ?? ""
+            let sanitized = InputValueSanitizer.sanitize(current, kind: valueKind)
+            if current != sanitized {
+                textField.text = sanitized
+            }
+        }
 
         func commit(_ textField: UITextField) {
-            let trimmed = (textField.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return }
-            onCommit(trimmed)
+            let sanitized = InputValueSanitizer.sanitize(textField.text ?? "", kind: valueKind)
+            guard !sanitized.isEmpty else { return }
+            textField.text = sanitized
+            onCommit(sanitized)
         }
     }
 }
@@ -1518,27 +1576,32 @@ private final class HiddenCaretTextField: UITextField {
 }
 
 private struct AddPlaceholderCell: View {
+    let width: CGFloat
+
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(Color(red: 0.89, green: 0.90, blue: 0.93), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                .frame(maxWidth: .infinity)
+                .frame(width: width)
                 .frame(height: 36)
 
             Image(systemName: "plus")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Color(red: 0.67, green: 0.70, blue: 0.75))
         }
-        .frame(maxWidth: .infinity)
+        .frame(width: width)
         .frame(height: 36)
     }
 }
 
 private enum WorkoutCardLayout {
     static let setIndexWidth: CGFloat = 28
-    static let inputCellWidth: CGFloat = 48
+    static let weightCellWidth: CGFloat = 62
+    static let repsCellWidth: CGFloat = 52
+    static let restCellWidth: CGFloat = 52
     static let statusWidth: CGFloat = 40
-    static let columnSpacing: CGFloat = 8
+    static let columnSpacing: CGFloat = 6
+    static let inputFontSize: CGFloat = 14
 }
 
 private struct RestProgressRing: View {
