@@ -37,8 +37,8 @@ struct ContentView: View {
                 }
                 .tag(AppTab.profile)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
-        .tint(.orange)
+        .background(AppTheme.bgPage)
+        .tint(AppTheme.orange)
     }
 
     private var trainStack: some View {
@@ -240,7 +240,7 @@ private struct HomeDashboardView: View {
             .padding(.top, 12)
             .padding(.bottom, 24)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppTheme.bgPage)
         .navigationBarHidden(true)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
             now = value
@@ -277,14 +277,14 @@ private struct HomeDashboardView: View {
                 Spacer()
                 Image(systemName: "calendar")
                     .font(.system(size: 13, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
 
             LazyVGrid(columns: columns, spacing: 6) {
                 ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { symbol in
                     Text(symbol)
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .lineLimit(1)
                         .minimumScaleFactor(0.8)
                         .frame(maxWidth: .infinity)
@@ -297,15 +297,15 @@ private struct HomeDashboardView: View {
                         .minimumScaleFactor(0.75)
                         .frame(maxWidth: .infinity)
                         .frame(height: 18)
-                        .background(day.isToday ? Color.primary : Color.clear)
-                        .foregroundStyle(day.isToday ? Color(uiColor: .systemBackground) : (day.isInCurrentMonth ? .primary : .clear))
+                        .background(day.isToday ? AppTheme.fg1 : Color.clear)
+                        .foregroundStyle(day.isToday ? Color.white : (day.isInCurrentMonth ? AppTheme.fg1 : .clear))
                         .clipShape(Circle())
                 }
             }
         }
         .padding(14)
         .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
     }
 
@@ -313,18 +313,18 @@ private struct HomeDashboardView: View {
         let summary = todaysSummary
 
         return VStack(alignment: .leading, spacing: 14) {
-            StatusRow(color: .orange, title: "总时长", value: summary.durationText, symbol: "clock")
-            StatusRow(color: .green, title: "已完成", value: "\(summary.completedSets)", symbol: "checkmark.circle")
-            StatusRow(color: .blue, title: "总组数", value: "\(summary.totalSets)", symbol: "dumbbell")
-            StatusRow(color: .purple, title: "总容量", value: summary.volumeText(unit: weightUnit), symbol: "scalemass")
+            StatusRow(color: AppTheme.orange, title: "总时长", value: summary.durationText, symbol: "clock")
+            StatusRow(color: AppTheme.confirm, title: "已完成", value: "\(summary.completedSets)", symbol: "checkmark.circle")
+            StatusRow(color: AppTheme.fg2, title: "总组数", value: "\(summary.totalSets)", symbol: "dumbbell")
+            StatusRow(color: AppTheme.fg3, title: "总容量", value: summary.volumeText(unit: weightUnit), symbol: "scalemass")
         }
         .padding(16)
         .frame(maxWidth: .infinity, minHeight: 138, alignment: .topLeading)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -343,12 +343,12 @@ private struct HomeDashboardView: View {
             .padding(.horizontal, 16)
             .frame(height: 56)
             .frame(maxWidth: .infinity)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
                     .stroke(style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                    .foregroundStyle(Color(.systemGray3))
+                    .foregroundStyle(AppTheme.fg3)
             )
         }
     }
@@ -360,7 +360,7 @@ private struct HomeDashboardView: View {
             workoutStatusCardContent(
                 session: session,
                 statusTitle: "有正在进行的训练",
-                accentColor: .orange,
+                accentColor: AppTheme.orange,
                 showsChevron: true
             )
         }
@@ -374,7 +374,7 @@ private struct HomeDashboardView: View {
             workoutStatusCardContent(
                 session: session,
                 statusTitle: "已完成",
-                accentColor: .green,
+                accentColor: AppTheme.confirm,
                 showsChevron: true
             )
         }
@@ -434,11 +434,11 @@ private struct HomeDashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 120)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -458,11 +458,11 @@ private struct HomeDashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: 150)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -533,7 +533,7 @@ private struct HomeDashboardView: View {
         HStack(spacing: 14) {
             ZStack {
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .fill(Color(red: 0.95, green: 0.96, blue: 0.98))
+                    .fill(AppTheme.fillSubtle)
                 Image(systemName: "figure.strengthtraining.traditional")
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(accentColor)
@@ -543,10 +543,10 @@ private struct HomeDashboardView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(statusTitle)
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                 Text(session.title)
                     .font(.system(size: 16, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppTheme.fg1)
 
                 HStack(spacing: 6) {
                     Image(systemName: "clock")
@@ -564,15 +564,15 @@ private struct HomeDashboardView: View {
             if showsChevron {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 18, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 22, style: .continuous)
-                .stroke(Color(red: 0.89, green: 0.90, blue: 0.93), lineWidth: 1)
+                .stroke(AppTheme.fg4, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.06), radius: 12, y: 6)
     }
@@ -593,7 +593,7 @@ private struct TrainingTemplateCard: View {
 
                     Text("上次使用: \(lastUsedText)")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
 
                 Spacer()
@@ -603,10 +603,10 @@ private struct TrainingTemplateCard: View {
                 ForEach(tags, id: \.self) { tag in
                     Text(tag)
                         .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .padding(.horizontal, 8)
                         .padding(.vertical, 5)
-                        .background(Color(.systemGray6))
+                        .background(AppTheme.fillMedium)
                         .clipShape(Capsule())
                 }
             }
@@ -614,7 +614,7 @@ private struct TrainingTemplateCard: View {
             HStack {
                 Label("预计 \(template.estimatedDuration) min", systemImage: "clock")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
 
                 Spacer()
 
@@ -630,17 +630,17 @@ private struct TrainingTemplateCard: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 14)
                     .frame(height: 34)
-                    .background(Color.black)
+                    .background(AppTheme.ctaFill)
                     .clipShape(Capsule())
                 }
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 }

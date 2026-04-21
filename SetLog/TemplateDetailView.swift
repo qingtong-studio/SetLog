@@ -33,9 +33,9 @@ struct TemplateDetailView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
                 .padding(.bottom, 16)
-                .background(Color(uiColor: .secondarySystemGroupedBackground))
+                .background(AppTheme.bgCard)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppTheme.bgPage)
         .navigationBarHidden(true)
     }
 
@@ -45,7 +45,7 @@ struct TemplateDetailView: View {
                 Button(action: { dismiss() }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                 }
                 Spacer()
             }
@@ -55,10 +55,10 @@ struct TemplateDetailView: View {
 
             Text(template.category)
                 .font(.system(size: 13, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 5)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(Capsule())
         }
     }
@@ -72,11 +72,11 @@ struct TemplateDetailView: View {
             metaItem(icon: "list.number", title: "动作数", value: "\(orderedExercises.count)")
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -84,12 +84,12 @@ struct TemplateDetailView: View {
         VStack(spacing: 6) {
             Image(systemName: icon)
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             Text(value)
                 .font(.system(size: 16, weight: .bold))
             Text(title)
                 .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
         }
         .frame(maxWidth: .infinity)
     }
@@ -113,7 +113,7 @@ struct TemplateDetailView: View {
                 .font(.system(size: 14, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 28, height: 28)
-                .background(Color.black)
+                .background(AppTheme.ctaFill)
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 4) {
@@ -126,24 +126,24 @@ struct TemplateDetailView: View {
                     Label(exercise.defaultWeightKg.formattedWeightWithUnit(unit: weightUnit), systemImage: "scalemass")
                 }
                 .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             }
 
             Spacer()
 
             Image(systemName: exercise.symbolName)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .frame(width: 36, height: 36)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
         .padding(14)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -160,7 +160,7 @@ struct TemplateDetailView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(Color.black)
+            .background(AppTheme.ctaFill)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
     }

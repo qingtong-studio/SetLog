@@ -21,7 +21,7 @@ final class NumericKeyboardInputView: UIView {
     override init(frame: CGRect) {
         super.init(frame: frame)
         autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        backgroundColor = UIColor.secondarySystemBackground
+        backgroundColor = AppTheme.uiBgPage
         setupLayout()
     }
 
@@ -49,7 +49,7 @@ final class NumericKeyboardInputView: UIView {
         spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
 
         let dismissBtn = makeToolButton(title: "收起", action: #selector(dismissTapped))
-        dismissBtn.setTitleColor(.systemOrange, for: .normal)
+        dismissBtn.setTitleColor(AppTheme.uiOrange, for: .normal)
 
         toolbarStack.addArrangedSubview(crBtn)
         toolbarStack.addArrangedSubview(cdBtn)
@@ -105,12 +105,8 @@ final class NumericKeyboardInputView: UIView {
         let btn = UIButton(type: .system)
         btn.setTitle(title, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 22, weight: .medium)
-        btn.setTitleColor(.label, for: .normal)
-        btn.backgroundColor = UIColor { traits in
-            traits.userInterfaceStyle == .dark
-                ? UIColor(white: 0.25, alpha: 1)
-                : .white
-        }
+        btn.setTitleColor(AppTheme.uiFg1, for: .normal)
+        btn.backgroundColor = AppTheme.uiBgCard
         btn.layer.cornerRadius = 10
         btn.layer.shadowColor = UIColor.black.cgColor
         btn.layer.shadowOffset = CGSize(width: 0, height: 1)
@@ -124,8 +120,8 @@ final class NumericKeyboardInputView: UIView {
         let btn = UIButton(type: .system)
         btn.setTitle(title, for: .normal)
         btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        btn.setTitleColor(.label, for: .normal)
-        btn.setTitleColor(.tertiaryLabel, for: .disabled)
+        btn.setTitleColor(AppTheme.uiFg1, for: .normal)
+        btn.setTitleColor(AppTheme.uiFg3, for: .disabled)
         btn.addTarget(self, action: action, for: .touchUpInside)
         return btn
     }

@@ -1,7 +1,7 @@
 import SwiftUI
 import SwiftData
 
-private let calAccent = Color(red: 0.60, green: 0.82, blue: 0.26)
+private let calAccent = AppTheme.confirm
 
 struct HistoryView: View {
     @State private var calYear: Int
@@ -43,7 +43,7 @@ struct HistoryView: View {
             .padding(.top, 12)
             .padding(.bottom, 28)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppTheme.bgPage)
         .navigationBarHidden(true)
     }
 
@@ -65,15 +65,15 @@ struct HistoryView: View {
                     }) {
                         Image(systemName: mode == .calendar ? "calendar" : "list.bullet")
                             .font(.system(size: 14, weight: .semibold))
-                            .foregroundStyle(viewMode == mode ? Color(uiColor: .systemBackground) : .secondary)
+                            .foregroundStyle(viewMode == mode ? Color.white : AppTheme.fg2)
                             .frame(width: 36, height: 30)
-                            .background(viewMode == mode ? Color.primary : Color.clear)
+                            .background(viewMode == mode ? AppTheme.ctaFill : Color.clear)
                             .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                     }
                 }
             }
             .padding(2)
-            .background(Color(.systemGray5).opacity(0.6))
+            .background(AppTheme.fillMedium.opacity(0.6))
             .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
         }
     }
@@ -87,7 +87,7 @@ struct HistoryView: View {
                 Button(action: previousMonth) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                         .frame(width: 32, height: 32)
                 }
 
@@ -101,7 +101,7 @@ struct HistoryView: View {
                 Button(action: nextMonth) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                         .frame(width: 32, height: 32)
                 }
             }
@@ -111,7 +111,7 @@ struct HistoryView: View {
                 ForEach(["日", "一", "二", "三", "四", "五", "六"], id: \.self) { day in
                     Text(day)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .frame(maxWidth: .infinity)
                 }
             }
@@ -143,11 +143,11 @@ struct HistoryView: View {
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -166,7 +166,7 @@ struct HistoryView: View {
                         Spacer()
                         Text(shortDateText(date))
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.fg2)
                     }
                     .foregroundStyle(calAccent)
                     .padding(.horizontal, 14)
@@ -185,7 +185,7 @@ struct HistoryView: View {
             if filteredSessions.isEmpty {
                 Text(selectedDate != nil ? "当天无训练记录" : "暂无训练记录")
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                     .frame(maxWidth: .infinity)
                     .padding(.top, selectedDate != nil ? 8 : 32)
             } else {
@@ -291,11 +291,11 @@ private struct CalendarDayButton: View {
                 VStack(spacing: 2) {
                     Text("\(day)")
                         .font(.system(size: 14, weight: hasWorkout ? .bold : .regular))
-                        .foregroundStyle(isSelected ? Color(uiColor: .systemBackground) : .primary)
+                        .foregroundStyle(isSelected ? Color.white : AppTheme.fg1)
 
                     Circle()
                         .fill(isSelected
-                              ? Color(uiColor: .systemBackground).opacity(hasWorkout ? 1 : 0)
+                              ? Color.white.opacity(hasWorkout ? 1 : 0)
                               : calAccent.opacity(hasWorkout ? 1 : 0))
                         .frame(width: 4, height: 4)
                 }
@@ -317,7 +317,7 @@ private struct HistoryRecordCard: View {
             VStack(alignment: .leading, spacing: 5) {
                 Text(session.title)
                     .font(.system(size: 15, weight: .bold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppTheme.fg1)
                     .lineLimit(1)
 
                 HStack(spacing: 4) {
@@ -328,7 +328,7 @@ private struct HistoryRecordCard: View {
                     Text("\(session.totalSetCount)组")
                 }
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             }
 
             Spacer(minLength: 8)
@@ -340,19 +340,19 @@ private struct HistoryRecordCard: View {
 
                 Text(weightUnit.displaySymbol.lowercased())
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(AppTheme.fg3)
         }
         .padding(14)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
         .shadow(color: Color.black.opacity(0.03), radius: 8, y: 4)
     }

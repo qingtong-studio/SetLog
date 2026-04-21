@@ -21,7 +21,7 @@ struct ProfileView: View {
         title: "常规设置",
         rows: [
             .segmented(title: "单位切换", subtitle: "重量显示单位", leadingIcon: "scalemass"),
-            .toggle(title: "消息通知", subtitle: "训练提醒与系统通知", leadingIcon: "bell", tint: .orange),
+            .toggle(title: "消息通知", subtitle: "训练提醒与系统通知", leadingIcon: "bell", tint: AppTheme.orange),
             .navigation(title: "显示模式", subtitle: "界面风格与系统外观", leadingIcon: "circle.lefthalf.filled", trailingText: "跟随系统")
         ]
     )
@@ -60,7 +60,7 @@ struct ProfileView: View {
             .padding(.top, 12)
             .padding(.bottom, 28)
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppTheme.bgPage)
         .navigationBarHidden(true)
         .onAppear {
             ensurePreferences()
@@ -125,7 +125,7 @@ struct ProfileView: View {
                     Circle()
                         .fill(
                             LinearGradient(
-                                colors: [Color.orange.opacity(0.95), Color(red: 0.96, green: 0.36, blue: 0.13)],
+                                colors: [AppTheme.orange, AppTheme.orangeDeep],
                                 startPoint: .topLeading,
                                 endPoint: .bottomTrailing
                             )
@@ -142,14 +142,14 @@ struct ProfileView: View {
 
                     Text(accountState.subtitle)
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
 
                     Text(accountState.badgeText)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.55, green: 0.47, blue: 0.22))
+                        .foregroundStyle(AppTheme.fg2)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 5)
-                        .background(Color(red: 0.96, green: 0.93, blue: 0.81))
+                        .background(AppTheme.orangeTint)
                         .clipShape(Capsule())
                 }
 
@@ -163,7 +163,7 @@ struct ProfileView: View {
                 Label("登录后再补同步、跨设备恢复与账号资料", systemImage: "icloud")
             }
             .font(.system(size: 12, weight: .medium))
-            .foregroundStyle(.secondary)
+            .foregroundStyle(AppTheme.fg2)
 
             HStack(spacing: 8) {
                 Image(systemName: "person.crop.circle.badge.plus")
@@ -173,20 +173,20 @@ struct ProfileView: View {
                 Spacer()
                 Text("即将上线")
                     .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
-            .foregroundStyle(.primary)
+            .foregroundStyle(AppTheme.fg1)
             .padding(.horizontal, 14)
             .frame(height: 46)
-            .background(Color(.systemGray6))
+            .background(AppTheme.fillMedium)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -198,10 +198,10 @@ struct ProfileView: View {
                 Spacer()
                 Text("未登录")
                     .font(.system(size: 11, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                     .padding(.horizontal, 8)
                     .padding(.vertical, 4)
-                    .background(Color(.systemGray6))
+                    .background(AppTheme.fillMedium)
                     .clipShape(Capsule())
             }
 
@@ -218,18 +218,18 @@ struct ProfileView: View {
             HStack(spacing: 8) {
                 Image(systemName: "clock.arrow.circlepath")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                 Text("最近一次完成训练：\(lastWorkoutText)")
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -240,16 +240,16 @@ struct ProfileView: View {
                     .font(.system(size: 15, weight: .medium))
                     .foregroundStyle(.white)
                     .frame(width: 30, height: 30)
-                    .background(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    .background(AppTheme.orange)
                     .clipShape(Circle())
 
                 VStack(alignment: .leading, spacing: 3) {
                     Text("导出训练记录")
                         .font(.system(size: 15, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                     Text("导出为 Markdown 格式，适合 Claude 等 AI 分析")
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
 
                 Spacer()
@@ -262,11 +262,11 @@ struct ProfileView: View {
             .frame(minHeight: 68)
         }
         .buttonStyle(.plain)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
         .sheet(isPresented: $showExportShare) {
             if let url = exportFileURL {
@@ -302,15 +302,15 @@ struct ProfileView: View {
 
             Text("当前训练记录、历史记录和设置均可正常使用，但数据只保存在这台设备上。后续接入账号系统后，可在这里完成登录并开启同步。")
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -325,7 +325,7 @@ struct ProfileView: View {
         VStack(alignment: .leading, spacing: 10) {
             Text(section.title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
 
             VStack(spacing: 0) {
                 ForEach(section.rows) { row in
@@ -341,11 +341,11 @@ struct ProfileView: View {
                     }
                 }
             }
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 18, style: .continuous)
-                    .stroke(Color(.systemGray5), lineWidth: 1)
+                    .stroke(AppTheme.fillMedium, lineWidth: 1)
             )
         }
     }
@@ -353,19 +353,19 @@ struct ProfileView: View {
     private var logoutButton: some View {
         HStack(spacing: 10) {
             Image(systemName: "rectangle.portrait.and.arrow.right")
-                .foregroundStyle(.red)
+                .foregroundStyle(AppTheme.danger)
             Text("退出登录")
                 .font(.system(size: 15, weight: .semibold))
-                .foregroundStyle(.red)
+                .foregroundStyle(AppTheme.danger)
             Spacer()
         }
         .padding(.horizontal, 16)
         .frame(height: 54)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -373,10 +373,10 @@ struct ProfileView: View {
         VStack(spacing: 6) {
             Image(systemName: "figure.strengthtraining.traditional")
                 .font(.system(size: 18))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             Text("SETLOG")
                 .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             Text("Guest mode supported. Sync comes later.")
                 .font(.system(size: 11))
                 .foregroundStyle(.tertiary)
@@ -406,9 +406,9 @@ private struct ProfileStatView: View {
         VStack(spacing: 6) {
             Image(systemName: stat.icon)
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .frame(width: 28, height: 28)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(Circle())
 
             HStack(alignment: .lastTextBaseline, spacing: 2) {
@@ -419,13 +419,13 @@ private struct ProfileStatView: View {
                 if let unit = stat.unit {
                     Text(unit)
                         .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
             }
 
             Text(stat.title)
                 .font(.system(size: 11))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
         }
         .frame(maxWidth: .infinity)
     }
@@ -440,9 +440,9 @@ private struct SettingRowView: View {
         HStack(spacing: 12) {
             Image(systemName: row.leadingIcon)
                 .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .frame(width: 30, height: 30)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(Circle())
 
             VStack(alignment: .leading, spacing: 3) {
@@ -452,7 +452,7 @@ private struct SettingRowView: View {
                 if let subtitle = row.subtitle {
                     Text(subtitle)
                         .font(.system(size: 12))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
             }
 
@@ -476,7 +476,7 @@ private struct SettingRowView: View {
                     if let trailingText {
                         Text(trailingText)
                             .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.fg2)
                     }
                     Image(systemName: "chevron.right")
                         .font(.system(size: 12, weight: .semibold))

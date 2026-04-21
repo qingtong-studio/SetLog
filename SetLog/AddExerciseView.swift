@@ -99,9 +99,9 @@ struct AddExerciseView: View {
                 .padding(.horizontal, 16)
                 .padding(.top, 10)
                 .padding(.bottom, 16)
-                .background(.white)
+                .background(AppTheme.bgCard)
         }
-        .background(Color(.systemGray6))
+        .background(AppTheme.fillMedium)
         .navigationBarHidden(true)
         .onAppear {
             syncSelectionState()
@@ -129,7 +129,7 @@ struct AddExerciseView: View {
                 }) {
                     Image(systemName: "chevron.left")
                         .font(.system(size: 16, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                 }
 
                 Spacer()
@@ -139,7 +139,7 @@ struct AddExerciseView: View {
                     isPresentingCustomExerciseSheet = true
                 }
                     .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
         }
         .padding(.horizontal, 16)
@@ -151,14 +151,14 @@ struct AddExerciseView: View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
 
             TextField("搜索动作名称...", text: $searchText)
                 .font(.system(size: 14))
         }
         .padding(.horizontal, 12)
         .frame(height: 42)
-        .background(Color(.systemGray5).opacity(0.3))
+        .background(AppTheme.fillMedium.opacity(0.3))
         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 
@@ -174,7 +174,7 @@ struct AddExerciseView: View {
                             .foregroundStyle(selectedCategory == category ? .white : .secondary)
                             .padding(.horizontal, 12)
                             .frame(height: 30)
-                            .background(selectedCategory == category ? Color.black : Color(.systemGray5).opacity(0.4))
+                            .background(selectedCategory == category ? AppTheme.ctaFill : AppTheme.fillMedium.opacity(0.4))
                             .clipShape(Capsule())
                     }
                 }
@@ -191,7 +191,7 @@ struct AddExerciseView: View {
                 if !selectedExerciseIDs.isEmpty {
                     Text("已选 \(selectedExerciseIDs.count) 项")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
             }
 
@@ -230,13 +230,13 @@ struct AddExerciseView: View {
                     Text(weightUnit.displaySymbol)
                         .foregroundStyle(.white)
                         .frame(width: 34, height: 26)
-                        .background(Color.black)
+                        .background(AppTheme.ctaFill)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
 
                     Text(weightUnit == .pound ? "KG" : "LB")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .frame(width: 34, height: 26)
-                        .background(Color(.systemGray6))
+                        .background(AppTheme.fillMedium)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
                 .font(.system(size: 11, weight: .bold))
@@ -245,10 +245,10 @@ struct AddExerciseView: View {
             HStack(alignment: .top, spacing: 8) {
                 Image(systemName: "waveform.path.ecg")
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                 Text(summaryText)
                     .font(.system(size: 11))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
 
             if !selectedExerciseIDs.isEmpty {
@@ -285,12 +285,12 @@ struct AddExerciseView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Label("初始重量 (\(weightUnit.displaySymbol))", systemImage: "scalemass")
                     .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
 
                 HStack(spacing: 8) {
                     Text(weightUnit.displaySymbol)
                         .font(.system(size: 15, weight: .bold))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                     TextField(
                         "0",
                         text: Binding(
@@ -312,13 +312,13 @@ struct AddExerciseView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 14)
                 .frame(height: 54)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 if selectedExercise != nil, selectedExerciseConfiguration.parsedWeightKg(weightUnit: weightUnit) == nil {
                     Text("请输入有效重量")
                         .font(.system(size: 11, weight: .medium))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.danger)
                 }
             }
         }
@@ -327,7 +327,7 @@ struct AddExerciseView: View {
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -346,7 +346,7 @@ struct AddExerciseView: View {
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
-            .background(canConfirmSelection ? Color.black : Color.gray)
+            .background(canConfirmSelection ? AppTheme.ctaFill : AppTheme.fg4)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .disabled(!canConfirmSelection)
@@ -364,7 +364,7 @@ struct AddExerciseView: View {
             HStack {
                 Text("已选动作")
                     .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                 Spacer()
                 Text("拖前后逻辑用上下调整替代")
                     .font(.system(size: 11))
@@ -402,19 +402,19 @@ struct AddExerciseView: View {
         VStack(spacing: 10) {
             Image(systemName: "magnifyingglass.circle")
                 .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             Text("没有找到匹配动作")
                 .font(.system(size: 15, weight: .semibold))
             Text("可以调整搜索词，或者新建一个自定义动作。")
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .multilineTextAlignment(.center)
             Button("创建自定义动作") {
                 prepareCustomExerciseDraft()
                 isPresentingCustomExerciseSheet = true
             }
             .font(.system(size: 13, weight: .semibold))
-            .foregroundStyle(.primary)
+            .foregroundStyle(AppTheme.fg1)
             .padding(.top, 4)
         }
         .frame(maxWidth: .infinity)
@@ -423,7 +423,7 @@ struct AddExerciseView: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -671,7 +671,7 @@ struct AddExerciseView: View {
                         .keyboardType(.decimalPad)
                         .multilineTextAlignment(.trailing)
                     Text(weightUnit.displaySymbol)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
             }
 
@@ -679,7 +679,7 @@ struct AddExerciseView: View {
                 Section {
                     Text(customValidationMessage)
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(AppTheme.danger)
                 }
             }
         }
@@ -721,7 +721,7 @@ private struct ExerciseOptionRow: View {
                     .font(.system(size: 16, weight: .bold))
                 Text(exercise.targetMuscle)
                     .font(.system(size: 12))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
 
             Spacer()
@@ -729,7 +729,7 @@ private struct ExerciseOptionRow: View {
             if let selectionIndex {
                 ZStack {
                     Circle()
-                        .fill(Color.black)
+                        .fill(AppTheme.ctaFill)
                     Text("\(selectionIndex + 1)")
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(.white)
@@ -742,24 +742,24 @@ private struct ExerciseOptionRow: View {
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(selectionIndex != nil ? Color.black : Color(.systemGray5), lineWidth: selectionIndex != nil ? 1.5 : 1)
+                .stroke(selectionIndex != nil ? AppTheme.ctaFill : AppTheme.fillMedium, lineWidth: selectionIndex != nil ? 1.5 : 1)
         )
     }
 
     private var color: Color {
         switch exercise.tintName {
         case "orange":
-            return .orange
+            return AppTheme.orange
         case "blue":
-            return .blue
+            return AppTheme.fg2
         case "gray":
-            return .gray
+            return AppTheme.fg3
         case "mint":
-            return .mint
+            return AppTheme.confirm
         case "purple":
-            return .purple
+            return AppTheme.fg3
         default:
-            return .secondary
+            return AppTheme.fg2
         }
     }
 }
@@ -781,7 +781,7 @@ private struct SelectedExerciseRow: View {
             HStack(spacing: 12) {
                 ZStack {
                     Circle()
-                        .fill(isActive ? Color.black : Color(.systemGray5))
+                        .fill(isActive ? AppTheme.ctaFill : AppTheme.fillMedium)
                     Text("\(index)")
                         .font(.system(size: 11, weight: .bold))
                         .foregroundStyle(isActive ? .white : .secondary)
@@ -791,10 +791,10 @@ private struct SelectedExerciseRow: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(title)
                         .font(.system(size: 14, weight: .semibold))
-                        .foregroundStyle(.primary)
+                        .foregroundStyle(AppTheme.fg1)
                     Text(subtitle)
                         .font(.system(size: 11))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
 
                 Spacer()
@@ -802,16 +802,16 @@ private struct SelectedExerciseRow: View {
                 HStack(spacing: 6) {
                     reorderButton(symbol: "arrow.up", disabled: !canMoveUp, action: onMoveUp)
                     reorderButton(symbol: "arrow.down", disabled: !canMoveDown, action: onMoveDown)
-                    reorderButton(symbol: "xmark", tint: .red, action: onRemove)
+                    reorderButton(symbol: "xmark", tint: AppTheme.danger, action: onRemove)
                 }
             }
             .padding(.horizontal, 12)
             .frame(height: 58)
-            .background(isActive ? Color(.systemGray6) : Color.white)
+            .background(isActive ? AppTheme.fillMedium : AppTheme.bgCard)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 14, style: .continuous)
-                    .stroke(isActive ? Color.black : Color(.systemGray5), lineWidth: isActive ? 1.2 : 1)
+                    .stroke(isActive ? AppTheme.ctaFill : AppTheme.fillMedium, lineWidth: isActive ? 1.2 : 1)
             )
         }
         .buttonStyle(.plain)
@@ -820,15 +820,15 @@ private struct SelectedExerciseRow: View {
     private func reorderButton(
         symbol: String,
         disabled: Bool = false,
-        tint: Color = .primary,
+        tint: Color = AppTheme.fg1,
         action: @escaping () -> Void
     ) -> some View {
         Button(action: action) {
             Image(systemName: symbol)
                 .font(.system(size: 11, weight: .bold))
-                .foregroundStyle(disabled ? Color.secondary.opacity(0.45) : tint)
+                .foregroundStyle(disabled ? AppTheme.fg4 : tint)
                 .frame(width: 26, height: 26)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(Circle())
         }
         .buttonStyle(.plain)
@@ -846,7 +846,7 @@ private struct AdjustableParameterField: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(title)
                 .font(.system(size: 12, weight: .semibold))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
 
             HStack(spacing: 8) {
                 Button(action: {
@@ -856,7 +856,7 @@ private struct AdjustableParameterField: View {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(value > range.lowerBound ? .primary : .secondary)
                         .frame(width: 26, height: 26)
-                        .background(Color.white)
+                        .background(AppTheme.bgCard)
                         .clipShape(Circle())
                 }
 
@@ -871,12 +871,12 @@ private struct AdjustableParameterField: View {
                         .font(.system(size: 12, weight: .bold))
                         .foregroundStyle(value < range.upperBound ? .primary : .secondary)
                         .frame(width: 26, height: 26)
-                        .background(Color.white)
+                        .background(AppTheme.bgCard)
                         .clipShape(Circle())
                 }
             }
                 .frame(height: 54)
-                .background(Color(.systemGray6))
+                .background(AppTheme.fillMedium)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
         }
         .frame(maxWidth: .infinity)

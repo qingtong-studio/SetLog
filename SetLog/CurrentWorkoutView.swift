@@ -180,7 +180,7 @@ struct CurrentWorkoutView: View {
                         proxy.scrollTo(rowID, anchor: .center)
                     }
                 }
-                .background(Color(uiColor: .systemGroupedBackground))
+                .background(AppTheme.bgPage)
                 .navigationBarHidden(true)
                 .ignoresSafeArea(edges: .bottom)
                 .toolbar(.hidden, for: .tabBar)
@@ -240,7 +240,7 @@ struct CurrentWorkoutView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
-                    .background(Color.black.opacity(0.82))
+                    .background(AppTheme.fg1.opacity(0.9))
                     .clipShape(Capsule())
                     .padding(.bottom, workout.hasActiveRest ? 116 : 32)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -291,7 +291,7 @@ struct CurrentWorkoutView: View {
             }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(Color(uiColor: .label))
+                    .foregroundStyle(AppTheme.fg1)
                     .frame(width: 40, height: 40)
             }
             .buttonStyle(.plain)
@@ -306,11 +306,11 @@ struct CurrentWorkoutView: View {
                 Text(elapsedTimeText(for: workout))
                     .font(.system(size: 23, weight: .black, design: .rounded))
                     .monospacedDigit()
-                    .foregroundStyle(Color(uiColor: .label))
+                    .foregroundStyle(AppTheme.fg1)
 
                 Text("进度: \(workout.completedSetCount)/\(max(workout.totalSetCount, 1)) 组  体积: \(volumeText(workout.totalVolumeKg))")
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
@@ -326,7 +326,7 @@ struct CurrentWorkoutView: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 15, weight: .black))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .frame(width: 29, height: 32)
                 }
 
@@ -343,18 +343,18 @@ struct CurrentWorkoutView: View {
                 .buttonStyle(.plain)
             }
             .padding(3)
-            .background(Color(uiColor: .tertiarySystemBackground))
+            .background(AppTheme.bgPage)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(Color(.systemGray4), lineWidth: 1)
+                    .stroke(AppTheme.fg4, lineWidth: 1)
             )
             .padding(.top, 22)
         }
         .padding(.horizontal, 20)
         .padding(.top, 16)
         .padding(.bottom, 12)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .overlay(alignment: .bottom) {
             Rectangle()
                 .fill(Color.black.opacity(0.06))
@@ -369,11 +369,11 @@ struct CurrentWorkoutView: View {
             .foregroundStyle(.primary)
             .frame(width: 40, height: 15)
             .frame(width: 50, height: 17)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .clipShape(Capsule())
             .overlay(
                 Capsule()
-                    .stroke(Color(red: 1.00, green: 0.43, blue: 0.06).opacity(0.32), lineWidth: 1.1)
+                    .stroke(AppTheme.orange.opacity(0.32), lineWidth: 1.1)
             )
     }
 
@@ -390,10 +390,10 @@ struct CurrentWorkoutView: View {
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color(.systemGray4), lineWidth: 1.2)
+                    .stroke(AppTheme.fg4, lineWidth: 1.2)
             )
         }
     }
@@ -402,7 +402,7 @@ struct CurrentWorkoutView: View {
         Text("END OF WORKOUT PLAN")
             .font(.system(size: 10, weight: .bold))
             .tracking(2)
-            .foregroundStyle(Color(red: 0.62, green: 0.64, blue: 0.68))
+            .foregroundStyle(AppTheme.fg3)
             .padding(.top, 4)
             .padding(.bottom, 8)
     }
@@ -414,12 +414,12 @@ struct CurrentWorkoutView: View {
         return HStack(spacing: 14) {
             ZStack {
                 Circle()
-                    .stroke(Color(red: 1.0, green: 0.45, blue: 0.08).opacity(0.18), lineWidth: 6)
+                    .stroke(AppTheme.orange.opacity(0.18), lineWidth: 6)
 
                 Circle()
                     .trim(from: 0, to: max(0.08, 1 - progress))
                     .stroke(
-                        Color(red: 1.0, green: 0.45, blue: 0.08),
+                        AppTheme.orange,
                         style: StrokeStyle(lineWidth: 6, lineCap: .round)
                     )
                     .rotationEffect(.degrees(-90))
@@ -430,7 +430,7 @@ struct CurrentWorkoutView: View {
                     .minimumScaleFactor(0.6)
                     .lineLimit(1)
                     .monospacedDigit()
-                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    .foregroundStyle(AppTheme.orange)
             }
             .frame(width: 56, height: 56)
 
@@ -443,7 +443,7 @@ struct CurrentWorkoutView: View {
                     }
 
                     Rectangle()
-                        .fill(Color(.systemGray4))
+                        .fill(AppTheme.fg4)
                         .frame(width: 1, height: 18)
 
                     RestAdjustButton(symbol: "-10s", accessibilityLabel: "减少十秒") {
@@ -451,7 +451,7 @@ struct CurrentWorkoutView: View {
                     }
                 }
                 .frame(width: 103, height: 44)
-                .background(Color(uiColor: .tertiarySystemFill))
+                .background(AppTheme.fillSubtle)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
                 Button("跳过") {
@@ -460,9 +460,9 @@ struct CurrentWorkoutView: View {
                 .font(.system(size: 16, weight: .bold))
                 .foregroundStyle(.white)
                 .frame(width: 54, height: 44)
-                .background(Color(red: 1.0, green: 0.45, blue: 0.08))
+                .background(AppTheme.orange)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: Color(red: 1.0, green: 0.45, blue: 0.08).opacity(0.25), radius: 10, y: 4)
+                .shadow(color: AppTheme.orange.opacity(0.25), radius: 10, y: 4)
                 .accessibilityLabel("提前完成休息")
                 .accessibilityHint("立即结束当前休息倒计时")
             }
@@ -470,7 +470,7 @@ struct CurrentWorkoutView: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, minHeight: 88)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -746,7 +746,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func primaryActionColor(for workout: WorkoutSession) -> Color {
-        workout.workoutIsRunning ? Color(red: 1.00, green: 0.43, blue: 0.06) : Color.green
+        workout.workoutIsRunning ? AppTheme.orange : AppTheme.confirm
     }
 
     private func completeWorkout(_ workout: WorkoutSession) {
@@ -800,7 +800,8 @@ struct CurrentWorkoutView: View {
            let sourceSet = workout.orderedExercises
             .flatMap(\.orderedSets)
             .first(where: { $0.id == sourceSetID }) {
-            sourceSet.recordedRestSeconds = actualSeconds
+            // Record the configured target (e.g. 90 s), not the actual elapsed ticks
+            sourceSet.recordedRestSeconds = targetSeconds
             // If rest duration was adjusted, propagate the new target to subsequent uncompleted sets
             if Int(sourceSet.restAfter) != targetSeconds,
                let exercise = sourceSet.exercise {
@@ -979,26 +980,26 @@ struct CurrentWorkoutView: View {
             HStack(spacing: 14) {
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 24, weight: .bold))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(AppTheme.confirm)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text("训练已完成")
                         .font(.system(size: 14, weight: .bold))
                     Text(workout.title + " · " + elapsedTimeText(for: workout))
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                 }
 
                 Spacer()
 
                 Image(systemName: "chevron.up")
                     .font(.system(size: 14, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
             .overlay(
                 RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -1082,6 +1083,7 @@ struct ExerciseEditorCard: View {
     var forceEditableRest: Bool = false
 
     @State private var isShowingEditRestSheet = false
+    @State private var isCollapsed = true
 
     private var weightColumnTitle: String {
         exercise.weightMode == .singleHand ? "单手重" : "重量"
@@ -1093,10 +1095,16 @@ struct ExerciseEditorCard: View {
             HStack(alignment: .center, spacing: 8) {
                 Text(exercise.name)
                     .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(.primary)
+                    .foregroundStyle(AppTheme.fg1)
                     .lineLimit(1)
                     .minimumScaleFactor(0.8)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                            isCollapsed.toggle()
+                        }
+                    }
 
                 // 单手模式切换按钮
                 Button(action: onToggleWeightMode) {
@@ -1107,13 +1115,13 @@ struct ExerciseEditorCard: View {
                         Text("单手")
                             .font(.system(size: 11, weight: .semibold))
                     }
-                    .foregroundStyle(isActive ? .white : Color(uiColor: .secondaryLabel))
+                    .foregroundStyle(isActive ? .white : AppTheme.fg2)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
-                    .background(isActive ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiarySystemFill))
+                    .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
                     .clipShape(Capsule())
                     .overlay(
-                        Capsule().stroke(isActive ? Color.clear : Color(.systemGray4), lineWidth: 1)
+                        Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -1127,13 +1135,13 @@ struct ExerciseEditorCard: View {
                         Text("热身")
                             .font(.system(size: 11, weight: .semibold))
                     }
-                    .foregroundStyle(Color(uiColor: .secondaryLabel))
+                    .foregroundStyle(AppTheme.fg2)
                     .padding(.horizontal, 9)
                     .padding(.vertical, 5)
-                    .background(Color(uiColor: .tertiarySystemFill))
+                    .background(AppTheme.fillSubtle)
                     .clipShape(Capsule())
                     .overlay(
-                        Capsule().stroke(Color(.systemGray4), lineWidth: 1)
+                        Capsule().stroke(AppTheme.fg4, lineWidth: 1)
                     )
                 }
                 .buttonStyle(.plain)
@@ -1152,97 +1160,142 @@ struct ExerciseEditorCard: View {
                 } label: {
                     Image(systemName: "ellipsis")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color(uiColor: .secondaryLabel))
+                        .foregroundStyle(AppTheme.fg2)
                         .frame(width: 32, height: 32)
                 }
             }
 
-            // Progress text
-            Text(exercise.progressText)
-                .font(.system(size: 12, weight: .regular))
-                .foregroundStyle(.secondary)
-                .lineLimit(1)
-                .minimumScaleFactor(0.85)
+            // Progress row — tap to collapse / expand
+            Button(action: {
+                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                    isCollapsed.toggle()
+                }
+            }) {
+                HStack(spacing: 8) {
+                    Text(exercise.progressText)
+                        .font(.system(size: 12, weight: .regular))
+                        .foregroundStyle(AppTheme.fg2)
+                        .lineLimit(1)
+                        .minimumScaleFactor(0.85)
 
-            VStack(spacing: 10) {
-                HStack(spacing: 0) {
-                    HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                        Text("组")
-                            .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                        HStack(spacing: 2) {
-                            Text(weightColumnTitle)
-                            if exercise.weightMode == .singleHand {
-                                Text("×2")
-                                    .foregroundStyle(Color(red: 1.0, green: 0.45, blue: 0.08))
+                    if isCollapsed {
+                        HStack(spacing: 4) {
+                            ForEach(exercise.orderedSets) { set in
+                                if set.isWarmup {
+                                    Text("w")
+                                        .font(.system(size: 11, weight: .bold, design: .rounded))
+                                        .foregroundStyle(set.isCompleted ? AppTheme.orange : AppTheme.fg4)
+                                        .frame(width: 8, height: 8)
+                                } else if set.isCompleted {
+                                    Circle()
+                                        .fill(AppTheme.orange)
+                                        .frame(width: 8, height: 8)
+                                } else {
+                                    Circle()
+                                        .stroke(AppTheme.fg4, lineWidth: 1.5)
+                                        .frame(width: 8, height: 8)
+                                }
                             }
                         }
-                        .frame(width: WorkoutCardLayout.weightCellWidth, alignment: .center)
-                        Text("次数")
-                            .frame(width: WorkoutCardLayout.repsCellWidth, alignment: .center)
-                        Text("休息")
-                            .frame(width: WorkoutCardLayout.restCellWidth, alignment: .center)
+                        .transition(.opacity)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
 
-                    Text("状态")
-                        .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
-                }
-                .font(.system(size: 10, weight: .medium))
-                .foregroundStyle(.tertiary)
-                .textCase(.uppercase)
+                    Spacer(minLength: 0)
 
-                ForEach(exercise.orderedSets) { item in
-                    WorkoutSetRow(
-                        set: item,
-                        weightUnit: weightUnit,
-                        weightMode: exercise.weightMode,
-                        canDelete: exercise.orderedSets.count > 1,
-                        isRestActive: isRestActive,
-                        restSourceSetID: restSourceSetID,
-                        onToggle: { onToggleSet(item) },
-                        onUpdateWeight: { value in onUpdateWeight(item, value) },
-                        onUpdateReps: { value in onUpdateReps(item, value) },
-                        onUpdateRest: { value in onUpdateRest(item, value) },
-                        onBeginEditing: { onBeginEditingSet(item) },
-                        onCopyRight: { onCopyWeightRight(item) },
-                        onCopyDown: { onCopyWeightDown(item) },
-                        onCopyRepsDown: { onCopyRepsDown(item) },
-                        onToggleSetType: { onToggleSetType(item) },
-                        onDeleteSet: { onDeleteSet(item) },
-                        forceEditableRest: forceEditableRest
-                    )
-                }
-            }
-
-            Button(action: onAddSet) {
-                HStack(spacing: 0) {
-                    HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                        Text("\(exercise.orderedSets.count + 1)")
-                            .font(.system(size: 13, weight: .regular))
-                            .foregroundStyle(.quaternary)
-                            .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-
-                        AddPlaceholderCell(width: WorkoutCardLayout.weightCellWidth)
-                        AddPlaceholderCell(width: WorkoutCardLayout.repsCellWidth)
-                        AddPlaceholderCell(width: WorkoutCardLayout.restCellWidth)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Circle()
-                        .stroke(Color(.systemGray4), style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                        .frame(width: 26, height: 26)
-                        .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
+                    Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
+                        .font(.system(size: 11, weight: .semibold))
+                        .foregroundStyle(AppTheme.fg3)
                 }
             }
             .buttonStyle(.plain)
+
+            if !isCollapsed {
+                VStack(spacing: 10) {
+                    HStack(spacing: 0) {
+                        HStack(spacing: WorkoutCardLayout.columnSpacing) {
+                            Text("组")
+                                .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+                            HStack(spacing: 2) {
+                                Text(weightColumnTitle)
+                                if exercise.weightMode == .singleHand {
+                                    Text("×2")
+                                        .foregroundStyle(AppTheme.orange)
+                                }
+                            }
+                            .frame(width: WorkoutCardLayout.weightCellWidth, alignment: .center)
+                            Text("次数")
+                                .frame(width: WorkoutCardLayout.repsCellWidth, alignment: .center)
+                            Text("休息")
+                                .frame(width: WorkoutCardLayout.restCellWidth, alignment: .center)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Text("状态")
+                            .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
+                    }
+                    .font(.system(size: 10, weight: .medium))
+                    .foregroundStyle(AppTheme.fg3)
+                    .textCase(.uppercase)
+
+                    let warmupCount = exercise.warmupSets.count
+                    ForEach(exercise.orderedSets) { item in
+                        WorkoutSetRow(
+                            set: item,
+                            displayIndex: item.isWarmup ? 0 : item.index - warmupCount,
+                            weightUnit: weightUnit,
+                            weightMode: exercise.weightMode,
+                            canDelete: exercise.orderedSets.count > 1,
+                            isRestActive: isRestActive,
+                            restSourceSetID: restSourceSetID,
+                            onToggle: { onToggleSet(item) },
+                            onUpdateWeight: { value in onUpdateWeight(item, value) },
+                            onUpdateReps: { value in onUpdateReps(item, value) },
+                            onUpdateRest: { value in onUpdateRest(item, value) },
+                            onBeginEditing: { onBeginEditingSet(item) },
+                            onCopyRight: { onCopyWeightRight(item) },
+                            onCopyDown: { onCopyWeightDown(item) },
+                            onCopyRepsDown: { onCopyRepsDown(item) },
+                            onToggleSetType: { onToggleSetType(item) },
+                            onDeleteSet: { onDeleteSet(item) },
+                            forceEditableRest: forceEditableRest
+                        )
+                    }
+                }
+
+                Button(action: onAddSet) {
+                    HStack(spacing: 0) {
+                        HStack(spacing: WorkoutCardLayout.columnSpacing) {
+                            Text("\(exercise.workingSets.count + 1)")
+                                .font(.system(size: 13, weight: .regular))
+                                .foregroundStyle(AppTheme.fg3)
+                                .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+
+                            AddPlaceholderCell(width: WorkoutCardLayout.weightCellWidth)
+                            AddPlaceholderCell(width: WorkoutCardLayout.repsCellWidth)
+                            AddPlaceholderCell(width: WorkoutCardLayout.restCellWidth)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Circle()
+                            .stroke(AppTheme.fg4, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                            .frame(width: 26, height: 26)
+                            .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
+                    }
+                }
+                .buttonStyle(.plain)
+                .transition(.asymmetric(
+                    insertion: .opacity.combined(with: .offset(y: -8)),
+                    removal: .opacity.combined(with: .offset(y: -8))
+                ))
+            }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(isDragging ? Color.orange.opacity(0.3) : Color.black.opacity(0.04), lineWidth: isDragging ? 2 : 0.5)
+                .stroke(isDragging ? AppTheme.orange.opacity(0.3) : Color.black.opacity(0.04), lineWidth: isDragging ? 2 : 0.5)
         )
         .shadow(color: isDragging ? Color.black.opacity(0.15) : Color.black.opacity(0.03), radius: isDragging ? 16 : 8, y: isDragging ? 6 : 3)
         .scaleEffect(isDragging ? 1.02 : 1.0)
@@ -1275,23 +1328,24 @@ struct ExerciseEditorCard: View {
     private var accentColor: Color {
         switch exercise.category {
         case "胸部":
-            return .orange
+            return AppTheme.orange
         case "腿部":
-            return .blue
+            return AppTheme.fg2
         case "背部":
-            return .mint
+            return AppTheme.confirm
         case "肩部":
-            return .gray
+            return AppTheme.fg3
         case "手臂":
-            return .purple
+            return AppTheme.fg3
         default:
-            return .secondary
+            return AppTheme.fg2
         }
     }
 }
 
 struct WorkoutSetRow: View {
     let set: WorkoutSet
+    var displayIndex: Int = 0
     let weightUnit: WeightUnit
     let weightMode: ExerciseWeightMode
     var canDelete: Bool = false
@@ -1319,11 +1373,11 @@ struct WorkoutSetRow: View {
     }
 
     private var indexLabel: String {
-        self.set.isWarmup ? "W" : "\(self.set.index)"
+        self.set.isWarmup ? "W" : "\(displayIndex)"
     }
 
     private var indexColor: Color {
-        self.set.isWarmup ? .orange : Color.primary
+        self.set.isWarmup ? AppTheme.orange : AppTheme.fg1
     }
 
     private var isToggleLocked: Bool {
@@ -1357,8 +1411,8 @@ struct WorkoutSetRow: View {
                     keyboardType: .decimalPad,
                     width: WorkoutCardLayout.weightCellWidth,
                     isEditable: true,
-                    activeTextColor: Color(uiColor: .label),
-                    inactiveTextColor: Color(uiColor: .label),
+                    activeTextColor: AppTheme.fg1,
+                    inactiveTextColor: AppTheme.fg1,
                     onBeginEditing: onBeginEditing,
                     onCommit: onUpdateWeight,
                     onCopyRight: onCopyRight,
@@ -1370,8 +1424,8 @@ struct WorkoutSetRow: View {
                     keyboardType: .numberPad,
                     width: WorkoutCardLayout.repsCellWidth,
                     isEditable: true,
-                    activeTextColor: Color(uiColor: .label),
-                    inactiveTextColor: Color(uiColor: .label),
+                    activeTextColor: AppTheme.fg1,
+                    inactiveTextColor: AppTheme.fg1,
                     onBeginEditing: onBeginEditing,
                     onCommit: onUpdateReps,
                     onCopyDown: onCopyRepsDown
@@ -1390,8 +1444,8 @@ struct WorkoutSetRow: View {
                         keyboardType: .numberPad,
                         width: WorkoutCardLayout.restCellWidth,
                         isEditable: restEditable,
-                        activeTextColor: Color(red: 1.0, green: 0.45, blue: 0.08),
-                        inactiveTextColor: isRestSource ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color(uiColor: .tertiaryLabel),
+                        activeTextColor: AppTheme.orange,
+                        inactiveTextColor: isRestSource ? AppTheme.orange : AppTheme.fg3,
                         onBeginEditing: onBeginEditing,
                         onCommit: onUpdateRest,
                         onEndEditing: {
@@ -1417,10 +1471,10 @@ struct WorkoutSetRow: View {
 
             // Status circle — tap to complete; tap completed shows toast; long press cancels
             Circle()
-                .fill(set.isCompleted ? Color(red: 1.0, green: 0.45, blue: 0.08) : Color.clear)
+                .fill(set.isCompleted ? AppTheme.orange : Color.clear)
                 .background(
                     Circle()
-                        .stroke(set.isCompleted ? Color.clear : Color(.systemGray3), lineWidth: 2)
+                        .stroke(set.isCompleted ? Color.clear : AppTheme.fg3, lineWidth: 2)
                 )
                 .overlay {
                     if set.isCompleted {
@@ -1557,7 +1611,7 @@ private struct EditableInputCell: View {
         )
             .frame(width: width)
             .frame(height: 36)
-            .background(Color(uiColor: .tertiarySystemFill))
+            .background(AppTheme.fillSubtle)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
@@ -1698,13 +1752,13 @@ private struct AddPlaceholderCell: View {
     var body: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                .stroke(Color(red: 0.89, green: 0.90, blue: 0.93), style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
+                .stroke(AppTheme.fg4, style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
                 .frame(width: width)
                 .frame(height: 36)
 
             Image(systemName: "plus")
                 .font(.system(size: 15, weight: .regular))
-                .foregroundStyle(Color(red: 0.67, green: 0.70, blue: 0.75))
+                .foregroundStyle(AppTheme.fg3)
         }
         .frame(width: width)
         .frame(height: 36)
@@ -1730,12 +1784,12 @@ private struct RestProgressRing: View {
     var body: some View {
         ZStack {
             Circle()
-                .stroke(Color(red: 0.95, green: 0.96, blue: 0.97), lineWidth: lineWidth)
+                .stroke(AppTheme.fillSubtle, lineWidth: lineWidth)
 
             Circle()
                 .trim(from: 0, to: progress)
                 .stroke(
-                    Color(red: 1.0, green: 0.42, blue: 0.0),
+                    AppTheme.orangeDeep,
                     style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
                 )
                 .rotationEffect(.degrees(-90))
@@ -1758,7 +1812,7 @@ private struct RestAdjustButton: View {
         Button(action: action) {
             Text(symbol)
                 .font(.system(size: 10, weight: .bold))
-                .foregroundStyle(Color(uiColor: .label))
+                .foregroundStyle(AppTheme.fg1)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .buttonStyle(.plain)
@@ -1774,7 +1828,7 @@ private struct WorkoutSummaryOverlay: View {
 
     var body: some View {
         ZStack {
-            Color.black.opacity(0.5)
+            AppTheme.fg1.opacity(0.7)
                 .ignoresSafeArea()
 
             VStack(spacing: 28) {
@@ -1782,7 +1836,7 @@ private struct WorkoutSummaryOverlay: View {
 
                 Image(systemName: "checkmark.circle.fill")
                     .font(.system(size: 56))
-                    .foregroundStyle(.green)
+                    .foregroundStyle(AppTheme.confirm)
 
                 Text("训练完成")
                     .font(.system(size: 28, weight: .bold))
@@ -1804,10 +1858,10 @@ private struct WorkoutSummaryOverlay: View {
                     Button(action: onDismiss) {
                         Text("完成")
                             .font(.system(size: 16, weight: .bold))
-                            .foregroundStyle(.black)
+                            .foregroundStyle(AppTheme.fg1)
                             .frame(maxWidth: .infinity)
                             .frame(height: 52)
-                            .background(Color(uiColor: .secondarySystemGroupedBackground))
+                            .background(AppTheme.bgCard)
                             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
                     }
 
@@ -1855,7 +1909,7 @@ private struct EditDefaultRestSheet: View {
                 VStack(spacing: 10) {
                     Text("正式组默认休息时间")
                         .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
 
                     HStack(alignment: .firstTextBaseline, spacing: 6) {
                         TextField("", text: $text)
@@ -1865,7 +1919,7 @@ private struct EditDefaultRestSheet: View {
                             .frame(width: 120)
                         Text("秒")
                             .font(.system(size: 26, weight: .bold))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.fg2)
                     }
                 }
 
@@ -1880,7 +1934,7 @@ private struct EditDefaultRestSheet: View {
                         .foregroundStyle(.white)
                         .frame(maxWidth: .infinity)
                         .frame(height: 50)
-                        .background(Color(red: 1.0, green: 0.45, blue: 0.08))
+                        .background(AppTheme.orange)
                         .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 .padding(.horizontal, 24)
@@ -1950,7 +2004,7 @@ struct ExerciseReplacePickerView: View {
                                 .font(.system(size: 13, weight: .medium))
                                 .padding(.horizontal, 14)
                                 .padding(.vertical, 7)
-                                .background(selectedCategory == cat ? Color.orange : Color(uiColor: .secondarySystemFill))
+                                .background(selectedCategory == cat ? AppTheme.orange : AppTheme.fillMedium)
                                 .foregroundStyle(selectedCategory == cat ? .white : .primary)
                                 .clipShape(Capsule())
                         }
@@ -1966,10 +2020,10 @@ struct ExerciseReplacePickerView: View {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
                                 .font(.system(size: 15, weight: .regular))
-                                .foregroundStyle(.primary)
+                                .foregroundStyle(AppTheme.fg1)
                             Text(item.targetMuscle)
                                 .font(.system(size: 12))
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(AppTheme.fg2)
                         }
                         .padding(.vertical, 4)
                     }

@@ -46,7 +46,7 @@ struct WorkoutTemplatesView: View {
                 .padding(.bottom, 24)
             }
         }
-        .background(Color(uiColor: .systemGroupedBackground))
+        .background(AppTheme.bgPage)
         .navigationBarHidden(true)
     }
 
@@ -55,7 +55,7 @@ struct WorkoutTemplatesView: View {
             .font(.system(size: 18, weight: .semibold))
             .frame(maxWidth: .infinity)
             .frame(height: 56)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
     }
 
     private var discoverHeader: some View {
@@ -64,7 +64,7 @@ struct WorkoutTemplatesView: View {
                 .font(.system(size: 34, weight: .black))
             Text("根据你的目标选择合适的计划")
                 .font(.system(size: 13, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
         }
     }
 
@@ -77,10 +77,10 @@ struct WorkoutTemplatesView: View {
                     }) {
                         Text(category)
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(selectedCategory == category ? .white : .secondary)
+                            .foregroundStyle(selectedCategory == category ? Color.white : AppTheme.fg2)
                             .padding(.horizontal, 12)
                             .frame(height: 30)
-                            .background(selectedCategory == category ? Color.black : Color(.systemGray5).opacity(0.4))
+                            .background(selectedCategory == category ? AppTheme.ctaFill : AppTheme.fillMedium.opacity(0.4))
                             .clipShape(Capsule())
                     }
                 }
@@ -111,21 +111,21 @@ struct WorkoutTemplatesView: View {
         VStack(spacing: 8) {
             Image(systemName: "square.stack.3d.up")
                 .font(.system(size: 24, weight: .medium))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
             Text("暂无模板")
                 .font(.system(size: 15, weight: .semibold))
             Text("先在训练中沉淀几次动作组合，再整理成模板。")
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
                 .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 
@@ -133,22 +133,22 @@ struct WorkoutTemplatesView: View {
         VStack(spacing: 10) {
             Image(systemName: "play")
                 .font(.system(size: 22, weight: .medium))
-                .foregroundStyle(Color(.systemGray3))
+                .foregroundStyle(AppTheme.fg3)
 
             Text("模板创建入口")
                 .font(.system(size: 18, weight: .bold))
 
             Text("下一步会开放自定义新模板")
                 .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.fg2)
         }
         .frame(maxWidth: .infinity)
         .frame(height: 150)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                .foregroundStyle(Color(.systemGray3))
+                .foregroundStyle(AppTheme.fg3)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
@@ -179,7 +179,7 @@ private struct WorkoutTemplateCard: View {
                         Label(template.level, systemImage: "flame")
                     }
                     .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                 }
 
                 Spacer()
@@ -193,9 +193,9 @@ private struct WorkoutTemplateCard: View {
                 ForEach(exerciseSymbols, id: \.self) { symbol in
                     Image(systemName: symbol)
                         .font(.system(size: 15, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
                         .frame(width: 36, height: 36)
-                        .background(Color(.systemGray6))
+                        .background(AppTheme.fillMedium)
                         .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
                 }
 
@@ -203,10 +203,10 @@ private struct WorkoutTemplateCard: View {
 
                 Text(template.category)
                     .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(AppTheme.fg2)
                     .padding(.horizontal, 10)
                     .frame(height: 26)
-                    .background(Color(.systemGray6))
+                    .background(AppTheme.fillMedium)
                     .clipShape(Capsule())
             }
 
@@ -219,19 +219,19 @@ private struct WorkoutTemplateCard: View {
                     Text("立即应用")
                         .font(.system(size: 15, weight: .semibold))
                 }
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.white)
                 .frame(maxWidth: .infinity)
                 .frame(height: 46)
-                .background(Color.black)
+                .background(AppTheme.ctaFill)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
             }
         }
         .padding(16)
-        .background(Color(uiColor: .secondarySystemGroupedBackground))
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
-                .stroke(Color(.systemGray5), lineWidth: 1)
+                .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }
 }

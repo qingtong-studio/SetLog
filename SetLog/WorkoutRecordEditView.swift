@@ -75,7 +75,7 @@ struct WorkoutRecordEditView: View {
                         proxy.scrollTo(rowID, anchor: .center)
                     }
                 }
-                .background(Color(uiColor: .systemGroupedBackground))
+                .background(AppTheme.bgPage)
                 .navigationBarHidden(true)
                 .ignoresSafeArea(edges: .bottom)
                 .toolbar(.hidden, for: .tabBar)
@@ -167,7 +167,7 @@ struct WorkoutRecordEditView: View {
             Button(action: { dismiss() }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 19, weight: .bold))
-                    .foregroundStyle(Color(uiColor: .label))
+                    .foregroundStyle(AppTheme.fg1)
                     .frame(width: 40, height: 40)
             }
             .buttonStyle(.plain)
@@ -181,22 +181,22 @@ struct WorkoutRecordEditView: View {
                 HStack(spacing: 4) {
                     Text(dateText(for: workout.dateStarted))
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
 
                     Text("·")
                         .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.fg2)
 
                     HStack(spacing: 2) {
                         TextField("0", text: $durationMinutes)
                             .keyboardType(.numberPad)
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(AppTheme.orange)
                             .frame(width: 32)
                             .multilineTextAlignment(.trailing)
                         Text("分钟")
                             .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(.secondary)
+                            .foregroundStyle(AppTheme.fg2)
                     }
                 }
             }
@@ -208,7 +208,7 @@ struct WorkoutRecordEditView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 9)
-                    .background(Color.green)
+                    .background(AppTheme.confirm)
                     .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .buttonStyle(.plain)
@@ -217,7 +217,7 @@ struct WorkoutRecordEditView: View {
         .padding(.top, 8)
         .padding(.bottom, 12)
         .background(
-            Color(uiColor: .systemGroupedBackground)
+            AppTheme.bgPage
                 .shadow(color: .black.opacity(0.06), radius: 8, y: 4)
         )
     }
@@ -247,13 +247,13 @@ struct WorkoutRecordEditView: View {
                 Text("增加训练动作")
                     .font(.system(size: 15, weight: .bold))
             }
-            .foregroundStyle(.primary)
+            .foregroundStyle(AppTheme.fg1)
             .frame(maxWidth: .infinity)
             .frame(height: 54)
-            .background(Color(uiColor: .secondarySystemGroupedBackground))
+            .background(AppTheme.bgCard)
             .overlay(
                 RoundedRectangle(cornerRadius: 16, style: .continuous)
-                    .stroke(Color(.systemGray4), lineWidth: 1.2)
+                    .stroke(AppTheme.fg4, lineWidth: 1.2)
             )
         }
     }
@@ -262,7 +262,7 @@ struct WorkoutRecordEditView: View {
         Text("END OF WORKOUT PLAN")
             .font(.system(size: 10, weight: .bold))
             .tracking(2)
-            .foregroundStyle(Color(red: 0.62, green: 0.64, blue: 0.68))
+            .foregroundStyle(AppTheme.fg3)
             .padding(.top, 4)
             .padding(.bottom, 8)
     }
