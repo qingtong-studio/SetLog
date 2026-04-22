@@ -12,13 +12,13 @@ enum SetType: String, Codable, CaseIterable {
 }
 
 enum ExerciseWeightMode: String, Codable, CaseIterable {
-    case standard = "standard"      // 非单手 - 输入总重（器械/杠铃）
-    case singleHand = "singleHand"  // 单手 - 输入单手重量（哑铃）
+    case standard = "standard"      // 非单边 - 输入总重（器械/杠铃）
+    case singleHand = "singleHand"  // 单边 - 输入单边重量（哑铃）
 
     var displayName: String {
         switch self {
-        case .standard: return "非单手"
-        case .singleHand: return "单手"
+        case .standard: return "非单边"
+        case .singleHand: return "单边"
         }
     }
 }
@@ -512,7 +512,7 @@ extension WorkoutSession {
         md += "时长: \(durationMin)分钟 | 总组数: \(totalSetCount) | 总容量: \(totalVolumeKg.formattedVolume(unit: unit))\n\n"
 
         for exercise in orderedExercises {
-            let modeLabel = exercise.weightMode == .singleHand ? " [单手模式]" : ""
+            let modeLabel = exercise.weightMode == .singleHand ? " [单边模式]" : ""
             md += "### \(exercise.name) (\(exercise.category))\(modeLabel)\n"
             md += "| 组 | 类型 | 重量(\(unit.displaySymbol.lowercased())) | 次数 | 休息(s) |\n"
             md += "|----|------|----------|------|--------|\n"

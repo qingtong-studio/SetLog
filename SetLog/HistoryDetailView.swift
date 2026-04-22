@@ -284,7 +284,7 @@ private struct ExerciseGroupCard: View {
                     Text("组号")
                         .frame(maxWidth: .infinity, alignment: .leading)
                     HStack(spacing: 2) {
-                        Text(exercise.weightMode == .singleHand ? "单手重" : "重量")
+                        Text(exercise.weightMode == .singleHand ? "单边" : "重量")
                         Text("(\(weightUnit.displaySymbol.lowercased()))")
                         if exercise.weightMode == .singleHand {
                             Text("×2")
@@ -303,9 +303,11 @@ private struct ExerciseGroupCard: View {
                 .padding(.bottom, 8)
 
                 // Table rows
+                let workingSetIDs = exercise.workingSets.map(\.id)
                 ForEach(exercise.orderedSets) { set in
+                    let displayLabel = set.isWarmup ? "W" : "\((workingSetIDs.firstIndex(of: set.id) ?? -1) + 1)"
                     HStack {
-                        Text("\(set.index)")
+                        Text(displayLabel)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Text(set.weightDisplay(unit: weightUnit))
                             .frame(maxWidth: .infinity, alignment: .center)

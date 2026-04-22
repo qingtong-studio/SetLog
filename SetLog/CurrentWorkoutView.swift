@@ -792,7 +792,7 @@ struct CurrentWorkoutView: View {
         cancelRestNotification()
     }
 
-    private func finishRest(for workout: WorkoutSession) {
+    private func finishRest(for workout: WorkoutSession, natural: Bool = false) {
         let actualSeconds = Int(workout.restElapsed(at: now))
         let targetSeconds = workout.restTargetSeconds
         workout.restActualSeconds = actualSeconds
@@ -800,8 +800,8 @@ struct CurrentWorkoutView: View {
            let sourceSet = workout.orderedExercises
             .flatMap(\.orderedSets)
             .first(where: { $0.id == sourceSetID }) {
-            // Record the configured target (e.g. 90 s), not the actual elapsed ticks
-            sourceSet.recordedRestSeconds = targetSeconds
+            // Natural end: record configured target. Skipped: record elapsed seconds.
+            sourceSet.recordedRestSeconds = natural ? targetSeconds : min(actualSeconds, targetSeconds)
             // If rest duration was adjusted, propagate the new target to subsequent uncompleted sets
             if Int(sourceSet.restAfter) != targetSeconds,
                let exercise = sourceSet.exercise {
@@ -844,7 +844,7 @@ struct CurrentWorkoutView: View {
 
         if remaining == 0 {
             AudioServicesPlaySystemSound(SystemSoundID(1007))
-            finishRest(for: workout)
+            finishRest(for: workout, natural: true)
             lastVibrationSecond = nil
             return
         }
@@ -883,7 +883,7 @@ struct CurrentWorkoutView: View {
         // If timer expired while in background, finish immediately
         let remaining = workout.restRemainingSeconds(at: now)
         if remaining <= 0 {
-            finishRest(for: workout)
+            finishRest(for: workout, natural: true)
             return
         }
 
@@ -1086,7 +1086,7 @@ struct ExerciseEditorCard: View {
     @State private var isCollapsed = true
 
     private var weightColumnTitle: String {
-        exercise.weightMode == .singleHand ? "单手重" : "重量"
+        exercise.weightMode == .singleHand ? "单边" : "重量"
     }
 
     var body: some View {
@@ -1105,46 +1105,6 @@ struct ExerciseEditorCard: View {
                             isCollapsed.toggle()
                         }
                     }
-
-                // 单手模式切换按钮
-                Button(action: onToggleWeightMode) {
-                    let isActive = exercise.weightMode == .singleHand
-                    HStack(spacing: 3) {
-                        Image(systemName: "hand.raised.fill")
-                            .font(.system(size: 11))
-                        Text("单手")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .foregroundStyle(isActive ? .white : AppTheme.fg2)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
-                .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
-
-                // 热身组按钮
-                Button(action: onAddWarmupSet) {
-                    HStack(spacing: 3) {
-                        Image(systemName: "flame.fill")
-                            .font(.system(size: 11))
-                        Text("热身")
-                            .font(.system(size: 11, weight: .semibold))
-                    }
-                    .foregroundStyle(AppTheme.fg2)
-                    .padding(.horizontal, 9)
-                    .padding(.vertical, 5)
-                    .background(AppTheme.fillSubtle)
-                    .clipShape(Capsule())
-                    .overlay(
-                        Capsule().stroke(AppTheme.fg4, lineWidth: 1)
-                    )
-                }
-                .buttonStyle(.plain)
 
                 // 更多菜单
                 Menu {
@@ -1177,7 +1137,9 @@ struct ExerciseEditorCard: View {
                         .foregroundStyle(AppTheme.fg2)
                         .lineLimit(1)
                         .minimumScaleFactor(0.85)
-
+                    
+                    Spacer(minLength: 0)
+                    
                     if isCollapsed {
                         HStack(spacing: 4) {
                             ForEach(exercise.orderedSets) { set in
@@ -1198,13 +1160,49 @@ struct ExerciseEditorCard: View {
                             }
                         }
                         .transition(.opacity)
+                    } else {
+                        // 单边模式切换按钮
+                        Button(action: onToggleWeightMode) {
+                            let isActive = exercise.weightMode == .singleHand
+                            HStack(spacing: 3) {
+                                Image(systemName: "hand.raised.fill")
+                                    .font(.system(size: 11))
+                                Text("单边")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundStyle(isActive ? .white : AppTheme.fg2)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
+
+                        // 热身组按钮
+                        Button(action: onAddWarmupSet) {
+                            HStack(spacing: 3) {
+                                Image(systemName: "flame.fill")
+                                    .font(.system(size: 11))
+                                Text("热身")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundStyle(AppTheme.fg2)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(AppTheme.fillSubtle)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(AppTheme.fg4, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+
                     }
 
-                    Spacer(minLength: 0)
-
-                    Image(systemName: isCollapsed ? "chevron.down" : "chevron.up")
-                        .font(.system(size: 11, weight: .semibold))
-                        .foregroundStyle(AppTheme.fg3)
                 }
             }
             .buttonStyle(.plain)
@@ -1237,11 +1235,11 @@ struct ExerciseEditorCard: View {
                     .foregroundStyle(AppTheme.fg3)
                     .textCase(.uppercase)
 
-                    let warmupCount = exercise.warmupSets.count
+                    let workingSetIDs = exercise.workingSets.map(\.id)
                     ForEach(exercise.orderedSets) { item in
                         WorkoutSetRow(
                             set: item,
-                            displayIndex: item.isWarmup ? 0 : item.index - warmupCount,
+                            displayIndex: item.isWarmup ? 0 : ((workingSetIDs.firstIndex(of: item.id) ?? -1) + 1),
                             weightUnit: weightUnit,
                             weightMode: exercise.weightMode,
                             canDelete: exercise.orderedSets.count > 1,
@@ -1387,23 +1385,26 @@ struct WorkoutSetRow: View {
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                Text(indexLabel)
-                    .font(.system(size: 14, weight: set.isWarmup ? .bold : .regular))
-                    .foregroundStyle(indexColor)
-                    .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                    .contextMenu {
-                        Button(action: onToggleSetType) {
-                            Label(
-                                set.isWarmup ? "切换为正式组" : "切换为热身组",
-                                systemImage: set.isWarmup ? "flame" : "flame.fill"
-                            )
-                        }
-                        if canDelete {
-                            Button(role: .destructive, action: { onDeleteSet?() }) {
-                                Label("删除此组", systemImage: "trash")
-                            }
+                Menu {
+                    Button(action: onToggleSetType) {
+                        Label(
+                            set.isWarmup ? "切换为正式组" : "切换为热身组",
+                            systemImage: set.isWarmup ? "flame" : "flame.fill"
+                        )
+                    }
+                    if canDelete {
+                        Button(role: .destructive, action: { onDeleteSet?() }) {
+                            Label("删除此组", systemImage: "trash")
                         }
                     }
+                } label: {
+                    Text(indexLabel)
+                        .font(.system(size: 14, weight: set.isWarmup ? .bold : .regular))
+                        .foregroundStyle(indexColor)
+                        .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
 
                 EditableInputCell(
                     value: weightDisplayValue,
