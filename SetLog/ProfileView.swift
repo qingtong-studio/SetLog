@@ -297,10 +297,10 @@ struct ProfileView: View {
 
     private var syncNoticeCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Label("未登录模式说明", systemImage: "lock.open")
+            Label("iCloud 同步", systemImage: "icloud")
                 .font(.system(size: 14, weight: .bold))
 
-            Text("当前训练记录、历史记录和设置均可正常使用，但数据只保存在这台设备上。后续接入账号系统后，可在这里完成登录并开启同步。")
+            Text("训练记录、模板与设置会自动同步到你的 iCloud 私人空间。同一 Apple ID 登录的设备之间自动互通，App 卸载重装后数据也会自动恢复。")
                 .font(.system(size: 12))
                 .foregroundStyle(AppTheme.fg2)
                 .fixedSize(horizontal: false, vertical: true)

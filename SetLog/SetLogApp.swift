@@ -21,13 +21,14 @@ struct SetLogApp: App {
             WorkoutTemplate.self,
             TemplateExercise.self
         ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
+        let modelConfiguration = ModelConfiguration(
+            schema: schema,
+            isStoredInMemoryOnly: false
+            // cloudKitDatabase: .private("iCloud.dahuang.SetLog") // 暂时禁用 iCloud 同步
+        )
 
         do {
-            let container = try makeModelContainer(schema: schema, configuration: modelConfiguration)
-            try SampleDataSeeder.seedIfNeeded(in: container.mainContext)
-            try ensureAppPreferences(in: container.mainContext)
-            return container
+            return try ModelContainer(for: schema, configurations: [modelConfiguration])
         } catch {
             fatalError("Could not create ModelContainer: \(error)")
         }
@@ -36,7 +37,8 @@ struct SetLogApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
-                .onAppear {
+                .task {
+                    await bootstrapAfterCloudSync()
                     requestNotificationPermission()
                 }
         }
@@ -47,37 +49,27 @@ struct SetLogApp: App {
         UNUserNotificationCenter.current().requestAuthorization(options: [.alert, .sound]) { _, _ in }
     }
 
-    private static func makeModelContainer(
-        schema: Schema,
-        configuration: ModelConfiguration
-    ) throws -> ModelContainer {
+    @MainActor
+    private func bootstrapAfterCloudSync() async {
+        // Give CloudKit a brief window to pull existing records before we
+        // decide whether to seed defaults. Without this, a fresh reinstall
+        // on an iCloud-backed account would race the sync and duplicate
+        // seed data locally.
+        try? await Task.sleep(nanoseconds: 1_500_000_000)
+
+        let context = sharedModelContainer.mainContext
         do {
-            return try ModelContainer(for: schema, configurations: [configuration])
+            try ensureAppPreferences(in: context)
+            try SampleDataSeeder.seedIfNeeded(in: context)
         } catch {
             #if DEBUG
-            // Early development fallback: reset an incompatible local store after schema changes.
-            try resetStore(at: configuration.url)
-            return try ModelContainer(for: schema, configurations: [configuration])
-            #else
-            throw error
+            print("SetLog bootstrap error: \(error)")
             #endif
         }
     }
 
-    private static func resetStore(at url: URL) throws {
-        let fileManager = FileManager.default
-        let relatedURLs = [
-            url,
-            url.appendingPathExtension("shm"),
-            url.appendingPathExtension("wal")
-        ]
-
-        for relatedURL in relatedURLs where fileManager.fileExists(atPath: relatedURL.path) {
-            try fileManager.removeItem(at: relatedURL)
-        }
-    }
-
-    private static func ensureAppPreferences(in context: ModelContext) throws {
+    @MainActor
+    private func ensureAppPreferences(in context: ModelContext) throws {
         var descriptor = FetchDescriptor<AppPreferences>()
         descriptor.fetchLimit = 1
 

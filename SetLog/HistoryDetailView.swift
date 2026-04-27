@@ -210,7 +210,7 @@ struct HistoryDetailView: View {
                 Text("复制为新训练")
                     .font(.system(size: 15, weight: .semibold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(AppTheme.invertedStrong)
             .frame(maxWidth: .infinity)
             .frame(height: 50)
             .background(AppTheme.ctaFill)
@@ -311,8 +311,15 @@ private struct ExerciseGroupCard: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         Text(set.weightDisplay(unit: weightUnit))
                             .frame(maxWidth: .infinity, alignment: .center)
-                        Text(set.repsDisplay)
-                            .frame(maxWidth: .infinity, alignment: .center)
+                        HStack(spacing: 4) {
+                            Text(set.repsDisplay)
+                            if let rpe = set.rpe, !set.isWarmup {
+                                Text("@\(rpe)")
+                                    .font(.system(size: 10, weight: .bold, design: .rounded))
+                                    .foregroundStyle(AppTheme.rpeColor(rpe))
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .center)
                         Text(restText(set))
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }

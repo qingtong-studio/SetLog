@@ -13,7 +13,7 @@ struct TemplateDetailView: View {
     }
 
     private var orderedExercises: [TemplateExercise] {
-        template.exercises.sorted { $0.order < $1.order }
+        (template.exercises ?? []).sorted { $0.order < $1.order }
     }
 
     var body: some View {
@@ -123,7 +123,12 @@ struct TemplateDetailView: View {
                 HStack(spacing: 8) {
                     Label("\(exercise.defaultSets) 组", systemImage: "square.stack")
                     Label("\(exercise.defaultReps) 次", systemImage: "repeat")
-                    Label(exercise.defaultWeightKg.formattedWeightWithUnit(unit: weightUnit), systemImage: "scalemass")
+                    Label(
+                        exercise.defaultWeightKg > 0
+                            ? exercise.defaultWeightKg.formattedWeightWithUnit(unit: weightUnit)
+                            : "按历史",
+                        systemImage: "scalemass"
+                    )
                 }
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(AppTheme.fg2)

@@ -40,6 +40,22 @@ enum AppTheme {
             return UIColor(hex: hex).withAlphaComponent(alpha)
         })
     }
+
+    // MARK: - RPE (Rate of Perceived Exertion) colors
+    // 6: easy / warmup-ish, 7: ~3 reps in reserve, 8: ~2 RIR, 9: ~1 RIR, 10: failure
+    static let rpeAmber = dynamic(light: 0xF2B01C, dark: 0xFFC949)
+    static let rpeRed   = dynamic(light: 0xE53E3E, dark: 0xFF6B6B)
+
+    static func rpeColor(_ rpe: Int) -> Color {
+        switch rpe {
+        case 6:  return AppTheme.fg2
+        case 7:  return AppTheme.confirm
+        case 8:  return AppTheme.rpeAmber
+        case 9:  return AppTheme.orange
+        case 10: return AppTheme.rpeRed
+        default: return AppTheme.fg3
+        }
+    }
 }
 
 // MARK: - UIKit bridge (for UIView-based components)

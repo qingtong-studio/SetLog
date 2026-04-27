@@ -144,7 +144,7 @@ struct AddExerciseView: View {
         }
         .padding(.horizontal, 16)
         .frame(height: 56)
-        .background(.white)
+        .background(AppTheme.bgCard)
     }
 
     private var searchBar: some View {
@@ -171,7 +171,7 @@ struct AddExerciseView: View {
                     }) {
                         Text(category)
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(selectedCategory == category ? .white : .secondary)
+                            .foregroundStyle(selectedCategory == category ? AppTheme.invertedStrong : .secondary)
                             .padding(.horizontal, 12)
                             .frame(height: 30)
                             .background(selectedCategory == category ? AppTheme.ctaFill : AppTheme.fillMedium.opacity(0.4))
@@ -228,7 +228,7 @@ struct AddExerciseView: View {
 
                 HStack(spacing: 4) {
                     Text(weightUnit.displaySymbol)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppTheme.invertedStrong)
                         .frame(width: 34, height: 26)
                         .background(AppTheme.ctaFill)
                         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
@@ -323,7 +323,7 @@ struct AddExerciseView: View {
             }
         }
         .padding(16)
-        .background(.white)
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 18, style: .continuous)
@@ -343,7 +343,7 @@ struct AddExerciseView: View {
                 Image(systemName: "chevron.right")
                     .font(.system(size: 13, weight: .semibold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(AppTheme.invertedStrong)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(canConfirmSelection ? AppTheme.ctaFill : AppTheme.fg4)
@@ -419,7 +419,7 @@ struct AddExerciseView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 24)
-        .background(.white)
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -432,7 +432,7 @@ struct AddExerciseView: View {
             return
         }
 
-        var nextOrder = (session.exercises.map(\.order).max() ?? -1) + 1
+        var nextOrder = ((session.exercises ?? []).map(\.order).max() ?? -1) + 1
 
         for selectedExerciseID in selectedExerciseIDs {
             guard
@@ -460,7 +460,8 @@ struct AddExerciseView: View {
                 )
             }
 
-            session.exercises.append(workoutExercise)
+            if session.exercises == nil { session.exercises = [] }
+            session.exercises?.append(workoutExercise)
             nextOrder += 1
         }
 
@@ -732,13 +733,13 @@ private struct ExerciseOptionRow: View {
                         .fill(AppTheme.ctaFill)
                     Text("\(selectionIndex + 1)")
                         .font(.system(size: 12, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(AppTheme.invertedStrong)
                 }
                 .frame(width: 22, height: 22)
             }
         }
         .padding(12)
-        .background(.white)
+        .background(AppTheme.bgCard)
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 16, style: .continuous)
@@ -784,7 +785,7 @@ private struct SelectedExerciseRow: View {
                         .fill(isActive ? AppTheme.ctaFill : AppTheme.fillMedium)
                     Text("\(index)")
                         .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(isActive ? .white : .secondary)
+                        .foregroundStyle(isActive ? AppTheme.invertedStrong : .secondary)
                 }
                 .frame(width: 24, height: 24)
 

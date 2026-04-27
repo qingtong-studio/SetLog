@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!--
+    SetLog app icon
+    - iOS rounded-square, vibrant gradient background
+    - Steel/metal Olympic bumper plate, skeuomorphic 3D
+    - Single "20KG" weight marking, curved "SETLOG" brand
+    - Black strokes, bar hole shows through to background
+    Layout radii (plate centered at 256,256):
+      outer rim edge   r = 204
+      flat face edge   r = 188
+      brand arc        r = 172   (in outer band, between groove and face edge)
+      incised groove   r = 150
+      steel hub        r = 62
+      bar hole         r = 24
+  -->
+
+  <defs>
+    <!-- Vibrant iOS background -->
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#FFBE4A"/>
+      <stop offset="55%" stop-color="#FF6E2E"/>
+      <stop offset="100%" stop-color="#E12A65"/>
+    </linearGradient>
+
+    <!-- Beveled outer rim: softened range -->
+    <linearGradient id="rimGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"   stop-color="#F0F3F7"/>
+      <stop offset="35%"  stop-color="#C8CED6"/>
+      <stop offset="70%"  stop-color="#8E96A1"/>
+      <stop offset="100%" stop-color="#6A7380"/>
+    </linearGradient>
+
+    <!-- Face steel: softer -->
+    <radialGradient id="faceGrad" cx="34%" cy="28%" r="95%">
+      <stop offset="0%"   stop-color="#EEF1F5"/>
+      <stop offset="45%"  stop-color="#CAD1DA"/>
+      <stop offset="80%"  stop-color="#99A1AC"/>
+      <stop offset="100%" stop-color="#7D8691"/>
+    </radialGradient>
+
+    <!-- Hub steel: softer -->
+    <radialGradient id="hubGrad" cx="34%" cy="28%" r="85%">
+      <stop offset="0%"   stop-color="#F5F7FA"/>
+      <stop offset="45%"  stop-color="#CBD2DB"/>
+      <stop offset="85%"  stop-color="#8891A0"/>
+      <stop offset="100%" stop-color="#6A7380"/>
+    </radialGradient>
+
+    <!-- Subtle brushed-steel texture (very faint radial lines) -->
+    <radialGradient id="brushed" cx="50%" cy="50%" r="60%">
+      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.06"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+
+    <!-- iOS top gloss -->
+    <linearGradient id="bgGloss" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%"  stop-color="#FFFFFF" stop-opacity="0.55"/>
+      <stop offset="100%" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+
+    <!-- Strong drop shadow -->
+    <filter id="plateShadow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="10"/>
+      <feOffset dx="0" dy="12" result="off"/>
+      <feComponentTransfer><feFuncA type="linear" slope="0.32"/></feComponentTransfer>
+      <feMerge><feMergeNode/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+
+    <!-- Inset shadow on face (softer emboss) -->
+    <filter id="innerShadow">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5"/>
+      <feOffset dx="0" dy="4" result="off"/>
+      <feComposite in="off" in2="SourceAlpha" operator="arithmetic" k2="-1" k3="1" result="d"/>
+      <feColorMatrix in="d" values="0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.28 0"/>
+    </filter>
+
+    <!-- Engraved text highlight -->
+    <filter id="engrave" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="0.6"/>
+      <feOffset dx="0" dy="1.6" result="lit"/>
+      <feFlood flood-color="#FFFFFF" flood-opacity="0.6"/>
+      <feComposite in2="lit" operator="in" result="hl"/>
+      <feMerge>
+        <feMergeNode in="hl"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+
+    <!-- Brand arc: between enlarged hub (r=82) and groove (r=150) -->
+    <path id="brandArc" d="M 136 256 A 120 120 0 0 0 376 256" fill="none"/>
+  </defs>
+
+  <!-- iOS rounded-square background -->
+  <rect x="0" y="0" width="512" height="512" rx="114" ry="114" fill="url(#bgGrad)"/>
+  <path d="M 0 114 Q 0 0 114 0 L 398 0 Q 512 0 512 114 L 512 256
+           Q 384 212 256 212 Q 128 212 0 256 Z" fill="url(#bgGloss)"/>
+
+  <!-- Plate -->
+  <g filter="url(#plateShadow)">
+    <!-- Outer beveled rim (edge thickness) -->
+    <circle cx="256" cy="256" r="204" fill="url(#rimGrad)"/>
+    <circle cx="256" cy="256" r="204" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="2"/>
+
+    <!-- Flat face inset -->
+    <circle cx="256" cy="256" r="188" fill="url(#faceGrad)"/>
+    <circle cx="256" cy="256" r="188" fill="url(#brushed)"/>
+    <circle cx="256" cy="256" r="188" fill="transparent" filter="url(#innerShadow)"/>
+    <circle cx="256" cy="256" r="188" fill="none" stroke="#000" stroke-opacity="0.45" stroke-width="1.5"/>
+
+    <!-- Top gloss on face (softer) -->
+    <path d="M 112 212 Q 256 132 400 212 Q 358 196 256 194 Q 154 196 112 212 Z"
+          fill="#FFFFFF" opacity="0.22"/>
+
+    <!-- Incised concentric groove (softer) -->
+    <circle cx="256" cy="256" r="150" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="3.5"/>
+    <circle cx="256" cy="256" r="153.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.28" stroke-width="1.2"/>
+    <circle cx="256" cy="256" r="146.5" fill="none" stroke="#FFFFFF" stroke-opacity="0.18" stroke-width="1"/>
+
+    <!-- SETLOG brand text curved inside the groove (between hub and groove) -->
+    <g filter="url(#engrave)">
+      <text font-family="Impact, Haettenschweiler, 'Arial Narrow Bold', sans-serif"
+            font-weight="900" font-size="32"
+            fill="#0A0D12"
+            letter-spacing="8">
+        <textPath href="#brandArc" startOffset="50%" text-anchor="middle">SETLOG</textPath>
+      </text>
+    </g>
+
+    <!-- Steel center hub (raised 3D, enlarged) -->
+    <circle cx="256" cy="256" r="82" fill="url(#hubGrad)"/>
+    <circle cx="256" cy="256" r="82" fill="none" stroke="#000" stroke-opacity="0.55" stroke-width="2"/>
+    <!-- hub top highlight arc -->
+    <path d="M 196 226 Q 256 198 316 226 Q 286 212 256 211 Q 226 212 196 226 Z"
+          fill="#FFFFFF" opacity="0.4"/>
+
+    <!-- Bar hole: enlarged, see-through to background -->
+    <circle cx="256" cy="256" r="40" fill="url(#bgGrad)"/>
+    <circle cx="256" cy="256" r="40" fill="none" stroke="#000" stroke-opacity="0.7" stroke-width="2"/>
+    <circle cx="256" cy="256" r="38" fill="none" stroke="#000" stroke-opacity="0.25" stroke-width="2"/>
+  </g>
+</svg>

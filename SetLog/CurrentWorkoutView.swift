@@ -145,6 +145,9 @@ struct CurrentWorkoutView: View {
                                                 dragTranslation = 0
                                             }
                                         }
+                                    },
+                                    onUpdateRPE: { set, value in
+                                        updateRPE(for: set, value: value, in: workout)
                                     }
                                 )
                                 .background(
@@ -537,11 +540,19 @@ struct CurrentWorkoutView: View {
             provideNotificationFeedback(.success)
         } else {
             set.recordedRestSeconds = nil
+            set.rpe = nil
             if workout.restSourceSetID == toggledSetID {
                 clearRest(for: workout)
             }
         }
 
+        try? modelContext.save()
+    }
+
+    private func updateRPE(for set: WorkoutSet, value: Int?, in workout: WorkoutSession) {
+        guard set.isCompleted, !set.isWarmup else { return }
+        set.rpe = value
+        workout.updatedAt = now
         try? modelContext.save()
     }
 
@@ -555,7 +566,8 @@ struct CurrentWorkoutView: View {
             restAfter: sourceSet?.restAfter ?? 90,
             exercise: exercise
         )
-        exercise.sets.append(newSet)
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
         workout.updatedAt = now
         try? modelContext.save()
     }
@@ -564,7 +576,7 @@ struct CurrentWorkoutView: View {
         if workout.restSourceSetID == set.id {
             clearRest(for: workout)
         }
-        exercise.sets.removeAll { $0.id == set.id }
+        exercise.sets?.removeAll { $0.id == set.id }
         modelContext.delete(set)
         // Reindex: warmups first, then working
         let warmups = exercise.warmupSets
@@ -579,8 +591,8 @@ struct CurrentWorkoutView: View {
             clearRest(for: workout)
         }
 
-        if let index = workout.exercises.firstIndex(where: { $0.id == exercise.id }) {
-            workout.exercises.remove(at: index)
+        if let index = workout.exercises?.firstIndex(where: { $0.id == exercise.id }) {
+            workout.exercises?.remove(at: index)
         }
 
         for (index, item) in workout.orderedExercises.enumerated() {
@@ -958,7 +970,8 @@ struct CurrentWorkoutView: View {
             setTypeRawValue: SetType.warmup.rawValue,
             exercise: exercise
         )
-        exercise.sets.append(newSet)
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
         // Reindex: existing warmups, then new warmup at bottom, then working sets
         for (i, ws) in existingWarmups.enumerated() {
             ws.index = i + 1
@@ -1080,10 +1093,12 @@ struct ExerciseEditorCard: View {
     let onDragActivated: () -> Void
     let onDragChanged: (CGFloat) -> Void
     let onDragEnded: () -> Void
+    var onUpdateRPE: (WorkoutSet, Int?) -> Void = { _, _ in }
     var forceEditableRest: Bool = false
 
     @State private var isShowingEditRestSheet = false
     @State private var isCollapsed = true
+    @State private var rpeTrayExpandedSetID: UUID?
 
     private var weightColumnTitle: String {
         exercise.weightMode == .singleHand ? "单边" : "重量"
@@ -1131,14 +1146,13 @@ struct ExerciseEditorCard: View {
                     isCollapsed.toggle()
                 }
             }) {
-                HStack(spacing: 8) {
+                HStack(alignment: .center, spacing: 8) {
                     Text(exercise.progressText)
                         .font(.system(size: 12, weight: .regular))
                         .foregroundStyle(AppTheme.fg2)
                         .lineLimit(1)
-                        .minimumScaleFactor(0.85)
-                    
-                    Spacer(minLength: 0)
+                        .fixedSize(horizontal: true, vertical: false)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     
                     if isCollapsed {
                         HStack(spacing: 4) {
@@ -1204,6 +1218,7 @@ struct ExerciseEditorCard: View {
                     }
 
                 }
+                .frame(height: 26)
             }
             .buttonStyle(.plain)
 
@@ -1237,26 +1252,71 @@ struct ExerciseEditorCard: View {
 
                     let workingSetIDs = exercise.workingSets.map(\.id)
                     ForEach(exercise.orderedSets) { item in
-                        WorkoutSetRow(
-                            set: item,
-                            displayIndex: item.isWarmup ? 0 : ((workingSetIDs.firstIndex(of: item.id) ?? -1) + 1),
-                            weightUnit: weightUnit,
-                            weightMode: exercise.weightMode,
-                            canDelete: exercise.orderedSets.count > 1,
-                            isRestActive: isRestActive,
-                            restSourceSetID: restSourceSetID,
-                            onToggle: { onToggleSet(item) },
-                            onUpdateWeight: { value in onUpdateWeight(item, value) },
-                            onUpdateReps: { value in onUpdateReps(item, value) },
-                            onUpdateRest: { value in onUpdateRest(item, value) },
-                            onBeginEditing: { onBeginEditingSet(item) },
-                            onCopyRight: { onCopyWeightRight(item) },
-                            onCopyDown: { onCopyWeightDown(item) },
-                            onCopyRepsDown: { onCopyRepsDown(item) },
-                            onToggleSetType: { onToggleSetType(item) },
-                            onDeleteSet: { onDeleteSet(item) },
-                            forceEditableRest: forceEditableRest
-                        )
+                        VStack(spacing: 0) {
+                            WorkoutSetRow(
+                                set: item,
+                                displayIndex: item.isWarmup ? 0 : ((workingSetIDs.firstIndex(of: item.id) ?? -1) + 1),
+                                weightUnit: weightUnit,
+                                weightMode: exercise.weightMode,
+                                canDelete: exercise.orderedSets.count > 1,
+                                isRestActive: isRestActive,
+                                restSourceSetID: restSourceSetID,
+                                onToggle: {
+                                    let wasCompleted = item.isCompleted
+                                    onToggleSet(item)
+                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                        if !wasCompleted && !item.isWarmup {
+                                            rpeTrayExpandedSetID = item.id
+                                        } else {
+                                            rpeTrayExpandedSetID = nil
+                                        }
+                                    }
+                                },
+                                onUpdateWeight: { value in onUpdateWeight(item, value) },
+                                onUpdateReps: { value in onUpdateReps(item, value) },
+                                onUpdateRest: { value in onUpdateRest(item, value) },
+                                onBeginEditing: {
+                                    onBeginEditingSet(item)
+                                    if rpeTrayExpandedSetID != nil {
+                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                            rpeTrayExpandedSetID = nil
+                                        }
+                                    }
+                                },
+                                onCopyRight: { onCopyWeightRight(item) },
+                                onCopyDown: { onCopyWeightDown(item) },
+                                onCopyRepsDown: { onCopyRepsDown(item) },
+                                onToggleSetType: { onToggleSetType(item) },
+                                onDeleteSet: { onDeleteSet(item) },
+                                onRequestRPEEdit: {
+                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                        rpeTrayExpandedSetID = (rpeTrayExpandedSetID == item.id) ? nil : item.id
+                                    }
+                                },
+                                forceEditableRest: forceEditableRest
+                            )
+
+                            if rpeTrayExpandedSetID == item.id && !item.isWarmup {
+                                RPEInlineTray(
+                                    currentValue: item.rpe,
+                                    onSelect: { value in
+                                        onUpdateRPE(item, value)
+                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                            rpeTrayExpandedSetID = nil
+                                        }
+                                    },
+                                    onDismiss: {
+                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
+                                            rpeTrayExpandedSetID = nil
+                                        }
+                                    }
+                                )
+                                .transition(.asymmetric(
+                                    insertion: .opacity.combined(with: .offset(y: -6)),
+                                    removal: .opacity.combined(with: .offset(y: -6))
+                                ))
+                            }
+                        }
                     }
                 }
 
@@ -1290,6 +1350,12 @@ struct ExerciseEditorCard: View {
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .background(AppTheme.bgCard)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                isCollapsed.toggle()
+            }
+        }
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -1359,6 +1425,7 @@ struct WorkoutSetRow: View {
     let onCopyRepsDown: () -> Void
     let onToggleSetType: () -> Void
     var onDeleteSet: (() -> Void)? = nil
+    var onRequestRPEEdit: () -> Void = {}
     var forceEditableRest: Bool = false
 
     @State private var restIsLongPressEditable = false
@@ -1380,6 +1447,14 @@ struct WorkoutSetRow: View {
 
     private var isToggleLocked: Bool {
         isRestActive && !set.isCompleted && set.id != restSourceSetID
+    }
+
+    private var statusCircleFill: Color {
+        guard set.isCompleted else { return Color.clear }
+        if let rpe = set.rpe, !set.isWarmup {
+            return AppTheme.rpeColor(rpe)
+        }
+        return AppTheme.orange
     }
 
     var body: some View {
@@ -1470,9 +1545,9 @@ struct WorkoutSetRow: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Status circle — tap to complete; tap completed shows toast; long press cancels
+            // Status circle — tap to complete; tap completed opens RPE tray (or toast for warmup); long press cancels
             Circle()
-                .fill(set.isCompleted ? AppTheme.orange : Color.clear)
+                .fill(statusCircleFill)
                 .background(
                     Circle()
                         .stroke(set.isCompleted ? Color.clear : AppTheme.fg3, lineWidth: 2)
@@ -1490,7 +1565,11 @@ struct WorkoutSetRow: View {
                 .onTapGesture {
                     guard !isToggleLocked else { return }
                     if set.isCompleted {
-                        showToast("长按取消完成状态")
+                        if set.isWarmup {
+                            showToast("长按取消完成状态")
+                        } else {
+                            onRequestRPEEdit()
+                        }
                         UIImpactFeedbackGenerator(style: .light).impactOccurred()
                     } else {
                         onToggle()
@@ -1509,6 +1588,75 @@ struct WorkoutSetRow: View {
         .background(Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .id(set.id)
+    }
+}
+
+struct RPEInlineTray: View {
+    let currentValue: Int?
+    let onSelect: (Int) -> Void
+    let onDismiss: () -> Void
+
+    private let values: [Int] = [6, 7, 8, 9, 10]
+
+    var body: some View {
+        HStack(spacing: 6) {
+            Text("RPE")
+                .font(.system(size: 10, weight: .bold))
+                .tracking(1)
+                .foregroundStyle(AppTheme.fg3)
+                .padding(.trailing, 2)
+
+            ForEach(values, id: \.self) { value in
+                RPEButton(
+                    value: value,
+                    isSelected: currentValue == value,
+                    onTap: {
+                        onSelect(value)
+                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                    }
+                )
+            }
+
+            Button(action: {
+                onDismiss()
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+            }) {
+                Image(systemName: "xmark")
+                    .font(.system(size: 10, weight: .bold))
+                    .foregroundStyle(AppTheme.fg3)
+                    .frame(width: 26, height: 26)
+                    .background(AppTheme.fillSubtle)
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, alignment: .center)
+    }
+}
+
+private struct RPEButton: View {
+    let value: Int
+    let isSelected: Bool
+    let onTap: () -> Void
+
+    var body: some View {
+        Button(action: onTap) {
+            Text("\(value)")
+                .font(.system(size: 14, weight: .bold, design: .rounded))
+                .foregroundStyle(isSelected ? .white : AppTheme.rpeColor(value))
+                .frame(maxWidth: .infinity, minHeight: 30)
+                .background(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .fill(isSelected ? AppTheme.rpeColor(value) : Color.clear)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(AppTheme.rpeColor(value).opacity(isSelected ? 0 : 0.5), lineWidth: 1)
+                )
+        }
+        .buttonStyle(.plain)
     }
 }
 

@@ -30,6 +30,42 @@ struct WorkoutTemplatesView: View {
         }
     }
 
+    private struct TemplateGroup: Identifiable {
+        let id: String
+        let name: String
+        let templates: [WorkoutTemplate]
+    }
+
+    private static let ungroupedLabel = "未分组"
+
+    private var groupedTemplates: [TemplateGroup] {
+        let grouped = Dictionary(grouping: filteredTemplates) { template -> String in
+            let trimmed = template.groupName?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            return trimmed.isEmpty ? Self.ungroupedLabel : trimmed
+        }
+
+        return grouped.map { name, items in
+            let sorted = items.sorted { lhs, rhs in
+                if lhs.sortOrder != rhs.sortOrder {
+                    return lhs.sortOrder < rhs.sortOrder
+                }
+                return lhs.createdAt < rhs.createdAt
+            }
+            return TemplateGroup(id: name, name: name, templates: sorted)
+        }
+        .sorted { lhs, rhs in
+            groupPriority(lhs.name) < groupPriority(rhs.name)
+        }
+    }
+
+    private func groupPriority(_ name: String) -> Int {
+        if name == Self.ungroupedLabel { return Int.max }
+        if let index = SampleDataSeeder.groupDisplayOrder.firstIndex(of: name) {
+            return index
+        }
+        return SampleDataSeeder.groupDisplayOrder.count
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             topBar
@@ -89,11 +125,41 @@ struct WorkoutTemplatesView: View {
     }
 
     private var templateList: some View {
-        VStack(spacing: 14) {
+        VStack(alignment: .leading, spacing: 22) {
             if filteredTemplates.isEmpty {
                 noTemplateState
             } else {
-                ForEach(filteredTemplates) { template in
+                ForEach(groupedTemplates) { group in
+                    templateGroupSection(group)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .navigationDestination(item: $detailTemplate) { template in
+            TemplateDetailView(template: template, onApply: onApplyTemplate)
+        }
+    }
+
+    private func templateGroupSection(_ group: TemplateGroup) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(alignment: .firstTextBaseline, spacing: 8) {
+                Text(group.name)
+                    .font(.system(size: 18, weight: .bold))
+                    .foregroundStyle(AppTheme.fg1)
+
+                Text("\(group.templates.count)")
+                    .font(.system(size: 11, weight: .bold))
+                    .foregroundStyle(AppTheme.fg2)
+                    .padding(.horizontal, 8)
+                    .frame(height: 20)
+                    .background(AppTheme.fillMedium)
+                    .clipShape(Capsule())
+
+                Spacer()
+            }
+
+            VStack(spacing: 14) {
+                ForEach(group.templates) { template in
                     WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
                         .contentShape(Rectangle())
                         .onTapGesture {
@@ -101,9 +167,6 @@ struct WorkoutTemplatesView: View {
                         }
                 }
             }
-        }
-        .navigationDestination(item: $detailTemplate) { template in
-            TemplateDetailView(template: template, onApply: onApplyTemplate)
         }
     }
 
@@ -159,7 +222,7 @@ private struct WorkoutTemplateCard: View {
     let onApply: (WorkoutTemplate) -> Void
 
     private var orderedExercises: [TemplateExercise] {
-        template.exercises.sorted { $0.order < $1.order }
+        (template.exercises ?? []).sorted { $0.order < $1.order }
     }
 
     private var exerciseSymbols: [String] {

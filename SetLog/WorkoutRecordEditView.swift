@@ -156,6 +156,7 @@ struct WorkoutRecordEditView: View {
             onDeleteSet: onDelSet,
             onAddWarmupSet: onWarmup, onUpdateDefaultRest: { _ in }, onReplaceExercise: onRepl, onDelete: onDel,
             onDragActivated: onActivated, onDragChanged: onChanged, onDragEnded: onEnded,
+            onUpdateRPE: { set, value in updateRPE(for: set, value: value) },
             forceEditableRest: true
         )
     }
@@ -274,9 +275,19 @@ struct WorkoutRecordEditView: View {
         set.actualReps = set.actualReps ?? set.targetReps
         set.completedAt = set.isCompleted ? Date.now : nil
         set.recordedRestSeconds = nil
+        if !set.isCompleted {
+            set.rpe = nil
+        }
         workout.updatedAt = Date.now
         try? modelContext.save()
         UINotificationFeedbackGenerator().notificationOccurred(.success)
+    }
+
+    private func updateRPE(for set: WorkoutSet, value: Int?) {
+        guard set.isCompleted, !set.isWarmup else { return }
+        set.rpe = value
+        workout.updatedAt = Date.now
+        try? modelContext.save()
     }
 
     private func addSet(to exercise: WorkoutExercise) {
@@ -289,13 +300,14 @@ struct WorkoutRecordEditView: View {
             restAfter: sourceSet?.restAfter ?? 90,
             exercise: exercise
         )
-        exercise.sets.append(newSet)
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
         workout.updatedAt = Date.now
         try? modelContext.save()
     }
 
     private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutExercise) {
-        exercise.sets.removeAll { $0.id == set.id }
+        exercise.sets?.removeAll { $0.id == set.id }
         modelContext.delete(set)
         let warmups = exercise.warmupSets
         let workings = exercise.workingSets
@@ -305,8 +317,8 @@ struct WorkoutRecordEditView: View {
     }
 
     private func delete(exercise: WorkoutExercise) {
-        if let index = workout.exercises.firstIndex(where: { $0.id == exercise.id }) {
-            workout.exercises.remove(at: index)
+        if let index = workout.exercises?.firstIndex(where: { $0.id == exercise.id }) {
+            workout.exercises?.remove(at: index)
         }
         for (index, item) in workout.orderedExercises.enumerated() {
             item.order = index
@@ -405,7 +417,8 @@ struct WorkoutRecordEditView: View {
             setTypeRawValue: SetType.warmup.rawValue,
             exercise: exercise
         )
-        exercise.sets.append(newSet)
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
         // Reindex: warmup sets first, then working sets
         let warmups = exercise.orderedSets.filter { $0.isWarmup }
         let workings = exercise.orderedSets.filter { !$0.isWarmup }

@@ -131,6 +131,24 @@ struct ContentView: View {
         return session
     }
 
+    private func lastUserWeight(forExerciseNamed name: String) -> Double? {
+        let descriptor = FetchDescriptor<WorkoutExercise>(
+            predicate: #Predicate { $0.name == name }
+        )
+        guard let exercises = try? modelContext.fetch(descriptor) else { return nil }
+
+        let candidates = exercises
+            .flatMap { $0.sets ?? [] }
+            .filter { $0.weightKg > 0 }
+
+        let mostRecent = candidates.max { lhs, rhs in
+            let lhsDate = lhs.completedAt ?? lhs.exercise?.session?.dateStarted ?? .distantPast
+            let rhsDate = rhs.completedAt ?? rhs.exercise?.session?.dateStarted ?? .distantPast
+            return lhsDate < rhsDate
+        }
+        return mostRecent?.weightKg
+    }
+
     private func createWorkout(from template: WorkoutTemplate) -> WorkoutSession {
         let session = WorkoutSession(
             title: template.title,
@@ -140,7 +158,7 @@ struct ContentView: View {
         )
         modelContext.insert(session)
 
-        for (exerciseOrder, templateExercise) in template.exercises
+        for (exerciseOrder, templateExercise) in (template.exercises ?? [])
             .sorted(by: { $0.order < $1.order })
             .enumerated() {
             let workoutExercise = WorkoutExercise(
@@ -150,17 +168,21 @@ struct ContentView: View {
                 session: session
             )
 
+            let suggestedWeight = lastUserWeight(forExerciseNamed: templateExercise.name)
+                ?? templateExercise.defaultWeightKg
+
             workoutExercise.sets = (1...max(1, templateExercise.defaultSets)).map { index in
                 WorkoutSet(
                     index: index,
                     targetReps: templateExercise.defaultReps,
                     actualReps: nil,
-                    weightKg: templateExercise.defaultWeightKg,
+                    weightKg: suggestedWeight,
                     exercise: workoutExercise
                 )
             }
 
-            session.exercises.append(workoutExercise)
+            if session.exercises == nil { session.exercises = [] }
+            session.exercises?.append(workoutExercise)
         }
 
         try? modelContext.save()
@@ -195,7 +217,8 @@ struct ContentView: View {
                 )
             }
 
-            session.exercises.append(workoutExercise)
+            if session.exercises == nil { session.exercises = [] }
+            session.exercises?.append(workoutExercise)
         }
 
         try? modelContext.save()
@@ -210,7 +233,7 @@ private struct HomeDashboardView: View {
             session.isCompleted == false
         },
         sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]
-    ) private var activeSessions: [WorkoutSession]
+    ) private var unfinishedSessions: [WorkoutSession]
     @Query(sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]) private var allSessions: [WorkoutSession]
     @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var workoutTemplates: [WorkoutTemplate]
     @State private var now = Date.now
@@ -231,7 +254,9 @@ private struct HomeDashboardView: View {
                 if !completedTodaySessions.isEmpty {
                     completedWorkoutSection
                 }
-                quickStartButton
+                if activeSessions.isEmpty {
+                    quickStartButton
+                }
                 templateHeader
                 templateList
                 noRecordCard
@@ -249,6 +274,10 @@ private struct HomeDashboardView: View {
 
     private var weightUnit: WeightUnit {
         preferences.first?.weightUnit ?? .kilogram
+    }
+
+    private var activeSessions: [WorkoutSession] {
+        unfinishedSessions.filter { $0.workoutHasStarted }
     }
 
     private var topBar: some View {
@@ -405,17 +434,25 @@ private struct HomeDashboardView: View {
     }
 
     private var templateList: some View {
-        VStack(spacing: 14) {
+        Group {
             if workoutTemplates.isEmpty {
                 noTemplateCard
             } else {
-                ForEach(workoutTemplates.prefix(3)) { template in
-                    TrainingTemplateCard(
-                        template: template,
-                        lastUsedText: lastUsedText(for: template),
-                        tags: templateTags(for: template),
-                        onStart: onStartTemplate
-                    )
+                LazyVGrid(
+                    columns: [
+                        GridItem(.flexible(), spacing: 12),
+                        GridItem(.flexible(), spacing: 12)
+                    ],
+                    spacing: 12
+                ) {
+                    ForEach(workoutTemplates.prefix(4)) { template in
+                        TrainingTemplateCard(
+                            template: template,
+                            lastUsedText: lastUsedText(for: template),
+                            tags: templateTags(for: template),
+                            onStart: onStartTemplate
+                        )
+                    }
                 }
             }
         }
@@ -489,9 +526,9 @@ private struct HomeDashboardView: View {
     }
 
     private func templateTags(for template: WorkoutTemplate) -> [String] {
-        template.exercises
+        (template.exercises ?? [])
             .sorted(by: { $0.order < $1.order })
-            .prefix(4)
+            .prefix(2)
             .map(\.name)
     }
 
@@ -585,63 +622,44 @@ private struct TrainingTemplateCard: View {
     let onStart: (WorkoutTemplate) -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top) {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(template.title)
-                        .font(.system(size: 22, weight: .bold))
+        Button {
+            onStart(template)
+        } label: {
+            VStack(alignment: .leading, spacing: 10) {
+                Text(template.title)
+                    .font(.system(size: 17, weight: .bold))
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                    .foregroundStyle(AppTheme.fg1)
 
-                    Text("上次使用: \(lastUsedText)")
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppTheme.fg2)
-                }
-
-                Spacer()
-            }
-
-            HStack(spacing: 6) {
-                ForEach(tags, id: \.self) { tag in
-                    Text(tag)
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(AppTheme.fg2)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 5)
-                        .background(AppTheme.fillMedium)
-                        .clipShape(Capsule())
-                }
-            }
-
-            HStack {
-                Label("预计 \(template.estimatedDuration) min", systemImage: "clock")
-                    .font(.system(size: 12, weight: .medium))
+                Text("上次: \(lastUsedText)")
+                    .font(.system(size: 11))
                     .foregroundStyle(AppTheme.fg2)
+                    .lineLimit(1)
 
-                Spacer()
-
-                Button(action: {
-                    onStart(template)
-                }) {
-                    HStack(spacing: 6) {
-                        Image(systemName: "play.fill")
-                            .font(.system(size: 10))
-                        Text("开始")
-                            .font(.system(size: 13, weight: .semibold))
+                HStack(spacing: 6) {
+                    ForEach(tags, id: \.self) { tag in
+                        Text(tag)
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(AppTheme.fg2)
+                            .lineLimit(1)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 5)
+                            .background(AppTheme.fillMedium)
+                            .clipShape(Capsule())
                     }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .frame(height: 34)
-                    .background(AppTheme.ctaFill)
-                    .clipShape(Capsule())
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(14)
+            .background(AppTheme.bgCard)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 16, style: .continuous)
+                    .stroke(AppTheme.fillMedium, lineWidth: 1)
+            )
         }
-        .padding(16)
-        .background(AppTheme.bgCard)
-        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .stroke(AppTheme.fillMedium, lineWidth: 1)
-        )
+        .buttonStyle(.plain)
     }
 }
 
