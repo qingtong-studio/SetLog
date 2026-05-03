@@ -152,7 +152,13 @@ struct WorkoutRecordEditView: View {
             onToggleSet: onToggle, onUpdateWeight: onWeight, onUpdateReps: onReps,
             onUpdateRest: onRest, onBeginEditingSet: onBegin,
             onCopyWeightRight: onWRight, onCopyWeightDown: onWDown, onCopyRepsDown: onRDown,
-            onAddSet: onAdd, onToggleWeightMode: onWMode, onToggleSetType: onSType,
+            onAddSet: onAdd, onToggleWeightMode: onWMode,
+            onToggleBodyweight: { exercise.includesBodyweight.toggle() },
+            onUpdateBodyweight: { kg in
+                exercise.bodyweightKg = kg
+                exercise.includesBodyweight = true
+            },
+            onToggleSetType: onSType,
             onDeleteSet: onDelSet,
             onAddWarmupSet: onWarmup, onUpdateDefaultRest: { _ in }, onReplaceExercise: onRepl, onDelete: onDel,
             onDragActivated: onActivated, onDragChanged: onChanged, onDragEnded: onEnded,

@@ -111,7 +111,7 @@ struct TemplateDetailView: View {
         HStack(spacing: 12) {
             Text("\(index)")
                 .font(.system(size: 14, weight: .bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(AppTheme.invertedStrong)
                 .frame(width: 28, height: 28)
                 .background(AppTheme.ctaFill)
                 .clipShape(Circle())
@@ -162,7 +162,7 @@ struct TemplateDetailView: View {
                 Text("立即应用")
                     .font(.system(size: 16, weight: .semibold))
             }
-            .foregroundStyle(.white)
+            .foregroundStyle(AppTheme.invertedStrong)
             .frame(maxWidth: .infinity)
             .frame(height: 52)
             .background(AppTheme.ctaFill)

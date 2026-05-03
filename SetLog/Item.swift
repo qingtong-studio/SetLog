@@ -134,6 +134,8 @@ final class WorkoutExercise {
     var order: Int = 0
     var notes: String = ""
     var weightModeRawValue: String?
+    var bodyweightKg: Double?
+    var includesBodyweight: Bool = false
     var session: WorkoutSession?
     @Relationship(deleteRule: .cascade, inverse: \WorkoutSet.exercise)
     var sets: [WorkoutSet]? = []
@@ -150,6 +152,8 @@ final class WorkoutExercise {
         order: Int,
         notes: String = "",
         weightModeRawValue: String? = ExerciseWeightMode.standard.rawValue,
+        bodyweightKg: Double? = nil,
+        includesBodyweight: Bool = false,
         session: WorkoutSession? = nil,
         sets: [WorkoutSet] = []
     ) {
@@ -159,6 +163,8 @@ final class WorkoutExercise {
         self.order = order
         self.notes = notes
         self.weightModeRawValue = weightModeRawValue
+        self.bodyweightKg = bodyweightKg
+        self.includesBodyweight = includesBodyweight
         self.session = session
         self.sets = sets
     }
@@ -221,6 +227,11 @@ final class ExerciseCatalogItem {
     var tintName: String = ""
     var createdAt: Date = Date.now
 
+    // Personal preferences updated after each completed workout.
+    var preferredWeightKg: Double?
+    var preferredWeightModeRawValue: String?
+    var preferredRestSeconds: Int?
+
     init(
         id: UUID = UUID(),
         name: String,
@@ -243,6 +254,11 @@ final class ExerciseCatalogItem {
         self.symbolName = symbolName
         self.tintName = tintName
         self.createdAt = createdAt
+    }
+
+    var preferredWeightMode: ExerciseWeightMode? {
+        get { preferredWeightModeRawValue.flatMap(ExerciseWeightMode.init(rawValue:)) }
+        set { preferredWeightModeRawValue = newValue?.rawValue }
     }
 }
 
@@ -415,9 +431,11 @@ extension WorkoutExercise {
 
     var totalVolumeKg: Double {
         let mode = weightMode
+        let bw = includesBodyweight ? (bodyweightKg ?? 0) : 0
         return orderedSets.filter(\.isCompleted).reduce(0) { result, set in
             let reps = Double(set.actualReps ?? set.targetReps ?? 0)
-            let effective = mode == .singleHand ? set.weightKg * 2 : set.weightKg
+            var effective = mode == .singleHand ? set.weightKg * 2 : set.weightKg
+            effective += bw
             return result + effective * reps
         }
     }
@@ -466,6 +484,12 @@ extension WorkoutSet {
     func effectiveWeightKg(mode: ExerciseWeightMode) -> Double {
         mode == .singleHand ? weightKg * 2 : weightKg
     }
+
+    func effectiveLoadKg(for exercise: WorkoutExercise) -> Double {
+        let base = effectiveWeightKg(mode: exercise.weightMode)
+        let bw = exercise.includesBodyweight ? (exercise.bodyweightKg ?? 0) : 0
+        return base + bw
+    }
 }
 
 extension Double {
@@ -513,7 +537,112 @@ extension WeightUnit {
     }
 }
 
+// MARK: - Personal preferences
+
+enum ExercisePreferences {
+    /// Update each catalog item's personal preferences (weight, single-hand mode,
+    /// rest seconds) based on the latest completed work in the session. Should be
+    /// called once when a workout is marked completed.
+    static func apply(from session: WorkoutSession, in context: ModelContext) {
+        for exercise in session.orderedExercises {
+            let workingSets = exercise.workingSets.filter(\.isCompleted)
+            guard !workingSets.isEmpty else { continue }
+
+            let trimmedName = exercise.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { continue }
+
+            var descriptor = FetchDescriptor<ExerciseCatalogItem>(
+                predicate: #Predicate { $0.name == trimmedName }
+            )
+            descriptor.fetchLimit = 1
+            guard let catalogItem = try? context.fetch(descriptor).first else { continue }
+
+            let topSet = workingSets.max { $0.weightKg < $1.weightKg }
+            if let topSet, topSet.weightKg > 0 {
+                catalogItem.preferredWeightKg = topSet.weightKg
+            }
+            catalogItem.preferredWeightModeRawValue = exercise.weightMode.rawValue
+            if let firstRest = workingSets.first.map({ Int($0.restAfter) }), firstRest > 0 {
+                catalogItem.preferredRestSeconds = firstRest
+            }
+        }
+    }
+}
+
 // MARK: - Export
+
+enum ExportFormat: String, CaseIterable, Identifiable {
+    case markdown
+    case csv
+    case json
+
+    var id: String { rawValue }
+
+    var fileExtension: String {
+        switch self {
+        case .markdown: return "md"
+        case .csv: return "csv"
+        case .json: return "json"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .markdown: return "Markdown"
+        case .csv: return "CSV"
+        case .json: return "JSON"
+        }
+    }
+}
+
+enum ExportDateRange: Hashable, Identifiable {
+    case all
+    case last7Days
+    case last30Days
+    case custom(start: Date, end: Date)
+
+    var id: String {
+        switch self {
+        case .all: return "all"
+        case .last7Days: return "last7"
+        case .last30Days: return "last30"
+        case .custom: return "custom"
+        }
+    }
+
+    var displayName: String {
+        switch self {
+        case .all: return "全部"
+        case .last7Days: return "近 7 天"
+        case .last30Days: return "近 30 天"
+        case .custom: return "自定义"
+        }
+    }
+
+    static var presets: [ExportDateRange] {
+        [.all, .last7Days, .last30Days]
+    }
+
+    func filter(_ sessions: [WorkoutSession]) -> [WorkoutSession] {
+        let completed = sessions.filter { $0.isCompleted }
+        switch self {
+        case .all:
+            return completed
+        case .last7Days:
+            let cutoff = Calendar.current.date(byAdding: .day, value: -7, to: Date()) ?? Date()
+            return completed.filter { $0.dateStarted >= cutoff }
+        case .last30Days:
+            let cutoff = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+            return completed.filter { $0.dateStarted >= cutoff }
+        case .custom(let start, let end):
+            let lo = min(start, end)
+            let hi = max(start, end)
+            let startOfDay = Calendar.current.startOfDay(for: lo)
+            let endOfDay = Calendar.current.date(byAdding: .day, value: 1, to: Calendar.current.startOfDay(for: hi)) ?? hi
+            return completed.filter { $0.dateStarted >= startOfDay && $0.dateStarted < endOfDay }
+        }
+    }
+}
 
 extension WorkoutSession {
     func exportMarkdown(unit: WeightUnit) -> String {
@@ -526,31 +655,55 @@ extension WorkoutSession {
         var md = "## \(dateFormatter.string(from: dateStarted)) - \(title)\n"
         md += "时长: \(durationMin)分钟 | 总组数: \(totalSetCount) | 总容量: \(totalVolumeKg.formattedVolume(unit: unit))\n\n"
 
+        let unitSymbol = unit.displaySymbol.lowercased()
         for exercise in orderedExercises {
-            let modeLabel = exercise.weightMode == .singleHand ? " [单边模式]" : ""
-            md += "### \(exercise.name) (\(exercise.category))\(modeLabel)\n"
-            md += "| 组 | 类型 | 重量(\(unit.displaySymbol.lowercased())) | 次数 | 休息(s) |\n"
-            md += "|----|------|----------|------|--------|\n"
+            var headerExtras: [String] = []
+            if exercise.weightMode == .singleHand {
+                headerExtras.append("单边模式")
+            }
+            if exercise.includesBodyweight, let bw = exercise.bodyweightKg, bw > 0 {
+                headerExtras.append("含自重 \(bw.formattedWeight(unit: unit)) \(unitSymbol)")
+            }
+            let extrasLabel = headerExtras.isEmpty ? "" : " [\(headerExtras.joined(separator: " · "))]"
+            md += "### \(exercise.name) (\(exercise.category))\(extrasLabel)\n"
+            md += "| 组 | 类型 | 重量(\(unitSymbol)) | 次数 | RPE | 休息(s) |\n"
+            md += "|----|------|----------|------|-----|--------|\n"
             for set in exercise.orderedSets {
                 let typeLabel = set.isWarmup ? "热身" : "正式"
                 let weight = set.weightKg.formattedWeight(unit: unit)
                 let reps = set.actualReps ?? set.targetReps ?? 0
+                let rpe = set.rpe.map { "\($0)" } ?? "-"
                 let rest = set.recordedRestSeconds.map { "\($0)" } ?? "-"
-                md += "| \(set.index) | \(typeLabel) | \(weight) | \(reps) | \(rest) |\n"
+                md += "| \(set.index) | \(typeLabel) | \(weight) | \(reps) | \(rpe) | \(rest) |\n"
             }
             md += "\n"
+
+            let trimmedExNotes = exercise.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmedExNotes.isEmpty {
+                md += "> 备注: \(trimmedExNotes)\n\n"
+            }
         }
 
-        if !notes.isEmpty {
-            md += "备注: \(notes)\n\n"
+        let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmedNotes.isEmpty {
+            md += "备注: \(trimmedNotes)\n\n"
         }
         return md
     }
 }
 
 extension Array where Element == WorkoutSession {
+    private var sortedForExport: [WorkoutSession] {
+        self.sorted { $0.dateStarted < $1.dateStarted }
+    }
+
     func generateExportContent(unit: WeightUnit) -> String {
-        let sorted = self.filter { $0.isCompleted }.sorted { $0.dateStarted < $1.dateStarted }
+        generateExportContent(unit: unit, progress: nil)
+    }
+
+    @MainActor
+    func generateExportContent(unit: WeightUnit, progress: ((Double) -> Void)?) -> String {
+        let sorted = sortedForExport
 
         let dateFormatter = DateFormatter()
         dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
@@ -562,12 +715,175 @@ extension Array where Element == WorkoutSession {
         md += " | 总容量: \(totalVolume.formattedVolume(unit: unit))\n\n"
         md += "---\n\n"
 
-        for session in sorted {
+        let total = Swift.max(1, sorted.count)
+        for (idx, session) in sorted.enumerated() {
             md += session.exportMarkdown(unit: unit)
             md += "---\n\n"
+            progress?(Double(idx + 1) / Double(total))
         }
 
         return md
+    }
+
+    func generateCSV(unit: WeightUnit) -> String {
+        generateCSV(unit: unit, progress: nil)
+    }
+
+    @MainActor
+    func generateCSV(unit: WeightUnit, progress: ((Double) -> Void)?) -> String {
+        let unitSymbol = unit.displaySymbol.lowercased()
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd HH:mm"
+
+        var rows: [String] = []
+        rows.append([
+            "日期", "会话标题", "动作", "分类", "重量模式", "含自重",
+            "组号", "类型", "重量(\(unitSymbol))", "次数", "RPE", "休息(s)",
+            "动作备注", "会话备注"
+        ].joined(separator: ","))
+
+        let sorted = sortedForExport
+        let total = Swift.max(1, sorted.count)
+        for (idx, session) in sorted.enumerated() {
+            let dateStr = dateFormatter.string(from: session.dateStarted)
+            let title = session.title
+            let sessionNotes = session.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+            for exercise in session.orderedExercises {
+                let mode = exercise.weightMode.displayName
+                let bw: String
+                if exercise.includesBodyweight, let v = exercise.bodyweightKg, v > 0 {
+                    bw = "是(\(v.formattedWeight(unit: unit))\(unitSymbol))"
+                } else {
+                    bw = "否"
+                }
+                let exNotes = exercise.notes.trimmingCharacters(in: .whitespacesAndNewlines)
+                for set in exercise.orderedSets {
+                    let typeLabel = set.isWarmup ? "热身" : "正式"
+                    let weight = set.weightKg.formattedWeight(unit: unit)
+                    let reps = set.actualReps ?? set.targetReps ?? 0
+                    let rpe = set.rpe.map { "\($0)" } ?? ""
+                    let rest = set.recordedRestSeconds.map { "\($0)" } ?? ""
+                    let fields: [String] = [
+                        dateStr, title, exercise.name, exercise.category, mode, bw,
+                        "\(set.index)", typeLabel, weight, "\(reps)", rpe, rest,
+                        exNotes, sessionNotes
+                    ]
+                    rows.append(fields.map(csvEscape).joined(separator: ","))
+                }
+            }
+            progress?(Double(idx + 1) / Double(total))
+        }
+
+        // Prepend BOM so Excel detects UTF-8 correctly.
+        return "\u{FEFF}" + rows.joined(separator: "\r\n") + "\r\n"
+    }
+
+    func generateJSON(unit: WeightUnit) -> Data {
+        let dto = ExportRootDTO(
+            exportedAt: Date(),
+            unit: unit.rawValue,
+            totalSessions: sortedForExport.count,
+            totalVolume: sortedForExport.reduce(0.0) { $0 + $1.totalVolumeKg }
+                .convertedWeight(from: .kilogram, to: unit),
+            sessions: sortedForExport.map { ExportSessionDTO(session: $0, unit: unit) }
+        )
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .iso8601
+        encoder.outputFormatting = [.prettyPrinted, .sortedKeys, .withoutEscapingSlashes]
+        return (try? encoder.encode(dto)) ?? Data("{}".utf8)
+    }
+}
+
+private func csvEscape(_ value: String) -> String {
+    if value.contains(",") || value.contains("\"") || value.contains("\n") || value.contains("\r") {
+        let escaped = value.replacingOccurrences(of: "\"", with: "\"\"")
+        return "\"\(escaped)\""
+    }
+    return value
+}
+
+private struct ExportRootDTO: Encodable {
+    let exportedAt: Date
+    let unit: String
+    let totalSessions: Int
+    let totalVolume: Double
+    let sessions: [ExportSessionDTO]
+}
+
+private struct ExportSessionDTO: Encodable {
+    let id: String
+    let title: String
+    let dateStarted: Date
+    let dateEnded: Date?
+    let durationSeconds: Int
+    let templateName: String?
+    let notes: String
+    let totalSets: Int
+    let totalVolume: Double
+    let exercises: [ExportExerciseDTO]
+
+    init(session: WorkoutSession, unit: WeightUnit) {
+        self.id = session.id.uuidString
+        self.title = session.title
+        self.dateStarted = session.dateStarted
+        self.dateEnded = session.dateEnded
+        let end = session.dateEnded ?? session.dateStarted
+        self.durationSeconds = max(0, Int(end.timeIntervalSince(session.dateStarted)))
+        self.templateName = session.templateName
+        self.notes = session.notes
+        self.totalSets = session.totalSetCount
+        self.totalVolume = session.totalVolumeKg.convertedWeight(from: .kilogram, to: unit)
+        self.exercises = session.orderedExercises.map { ExportExerciseDTO(exercise: $0, unit: unit) }
+    }
+}
+
+private struct ExportExerciseDTO: Encodable {
+    let id: String
+    let name: String
+    let category: String
+    let order: Int
+    let weightMode: String
+    let includesBodyweight: Bool
+    let bodyweightInUnit: Double?
+    let notes: String
+    let sets: [ExportSetDTO]
+
+    init(exercise: WorkoutExercise, unit: WeightUnit) {
+        self.id = exercise.id.uuidString
+        self.name = exercise.name
+        self.category = exercise.category
+        self.order = exercise.order
+        self.weightMode = exercise.weightMode.rawValue
+        self.includesBodyweight = exercise.includesBodyweight
+        self.bodyweightInUnit = exercise.bodyweightKg?.convertedWeight(from: .kilogram, to: unit)
+        self.notes = exercise.notes
+        self.sets = exercise.orderedSets.map { ExportSetDTO(set: $0, unit: unit) }
+    }
+}
+
+private struct ExportSetDTO: Encodable {
+    let index: Int
+    let setType: String
+    let targetReps: Int?
+    let actualReps: Int?
+    let weight: Double
+    let weightUnit: String
+    let rpe: Int?
+    let restSeconds: Int?
+    let isCompleted: Bool
+    let completedAt: Date?
+
+    init(set: WorkoutSet, unit: WeightUnit) {
+        self.index = set.index
+        self.setType = set.setType.rawValue
+        self.targetReps = set.targetReps
+        self.actualReps = set.actualReps
+        self.weight = set.weightKg.convertedWeight(from: .kilogram, to: unit)
+        self.weightUnit = unit.rawValue
+        self.rpe = set.rpe
+        self.restSeconds = set.recordedRestSeconds
+        self.isCompleted = set.isCompleted
+        self.completedAt = set.completedAt
     }
 }
 

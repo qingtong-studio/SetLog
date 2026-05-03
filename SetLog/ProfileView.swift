@@ -7,6 +7,7 @@
 
 import SwiftData
 import SwiftUI
+import UIKit
 
 struct ProfileView: View {
     @Environment(\.modelContext) private var modelContext
@@ -16,6 +17,23 @@ struct ProfileView: View {
     @State private var showExportShare = false
     @State private var exportFileURL: URL?
     @State private var showNoDataAlert = false
+    @State private var showExportOptions = false
+    @State private var exportFormat: ExportFormat = .markdown
+    @State private var exportRangeSelection: ExportRangeSelection = .all
+    @State private var exportCustomStart: Date = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+    @State private var exportCustomEnd: Date = Date()
+    @State private var showExportPreview = false
+    @State private var previewContent: String = ""
+    @State private var previewFormat: ExportFormat = .markdown
+    @State private var previewSessionCount: Int = 0
+    @State private var previewIsLoading = false
+    @State private var previewProgress: Double = 0
+    @State private var exportShareItems: [Any] = []
+    @State private var exportErrorMessage: String?
+    @State private var fileExportInProgress = false
+    @State private var fileExportProgress: Double = 0
+    @State private var previewTask: Task<Void, Never>?
+    @State private var fileExportTask: Task<Void, Never>?
     private let accountState: AccountState = .guest
     private let regularSettings = SettingSection(
         title: "常规设置",
@@ -61,7 +79,7 @@ struct ProfileView: View {
             .padding(.bottom, 28)
         }
         .background(AppTheme.bgPage)
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .onAppear {
             ensurePreferences()
         }
@@ -234,7 +252,7 @@ struct ProfileView: View {
     }
 
     private var exportCard: some View {
-        Button(action: exportTrainingRecords) {
+        Button(action: openExportOptions) {
             HStack(spacing: 12) {
                 Image(systemName: "square.and.arrow.up")
                     .font(.system(size: 15, weight: .medium))
@@ -247,7 +265,7 @@ struct ProfileView: View {
                     Text("导出训练记录")
                         .font(.system(size: 15, weight: .semibold))
                         .foregroundStyle(AppTheme.fg1)
-                    Text("导出为 Markdown 格式，适合 Claude 等 AI 分析")
+                    Text("支持 Markdown / CSV / JSON，可直接复制文本或保存分享")
                         .font(.system(size: 12))
                         .foregroundStyle(AppTheme.fg2)
                 }
@@ -268,31 +286,196 @@ struct ProfileView: View {
             RoundedRectangle(cornerRadius: 18, style: .continuous)
                 .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
+        .sheet(isPresented: $showExportOptions) {
+            ExportOptionsSheet(
+                format: $exportFormat,
+                rangeSelection: $exportRangeSelection,
+                customStart: $exportCustomStart,
+                customEnd: $exportCustomEnd,
+                matchedSessionCount: matchedExportSessions.count,
+                isWorking: fileExportInProgress,
+                workingProgress: fileExportProgress,
+                onPreview: { performPreview() },
+                onShareFile: { performExportToFile() },
+                onCancel: {
+                    fileExportTask?.cancel()
+                    fileExportInProgress = false
+                    showExportOptions = false
+                }
+            )
+            .presentationDetents([.medium, .large])
+            .interactiveDismissDisabled(fileExportInProgress)
+        }
+        .sheet(isPresented: $showExportPreview, onDismiss: {
+            previewTask?.cancel()
+            previewTask = nil
+            previewIsLoading = false
+            previewContent = ""
+        }) {
+            ExportPreviewView(
+                content: previewContent,
+                format: previewFormat,
+                sessionCount: previewSessionCount,
+                isLoading: previewIsLoading,
+                progress: previewProgress
+            )
+        }
         .sheet(isPresented: $showExportShare) {
-            if let url = exportFileURL {
-                ShareSheet(activityItems: [url])
-            }
+            ShareSheet(activityItems: exportShareItems)
         }
         .alert("暂无训练记录", isPresented: $showNoDataAlert) {
             Button("好的", role: .cancel) {}
         } message: {
-            Text("完成至少一次训练后即可导出记录。")
+            Text("当前筛选范围内没有可导出的训练。")
+        }
+        .alert("导出失败", isPresented: errorBinding, presenting: exportErrorMessage) { _ in
+            Button("好的", role: .cancel) {}
+        } message: { message in
+            Text(message)
         }
     }
 
-    private func exportTrainingRecords() {
-        let completed = completedSessions
-        guard !completed.isEmpty else {
+    private var errorBinding: Binding<Bool> {
+        Binding(
+            get: { exportErrorMessage != nil },
+            set: { if !$0 { exportErrorMessage = nil } }
+        )
+    }
+
+    private func openExportOptions() {
+        guard !completedSessions.isEmpty else {
+            showNoDataAlert = true
+            return
+        }
+        showExportOptions = true
+    }
+
+    private var resolvedExportRange: ExportDateRange {
+        switch exportRangeSelection {
+        case .all: return .all
+        case .last7: return .last7Days
+        case .last30: return .last30Days
+        case .custom: return .custom(start: exportCustomStart, end: exportCustomEnd)
+        }
+    }
+
+    private var matchedExportSessions: [WorkoutSession] {
+        resolvedExportRange.filter(completedSessions)
+    }
+
+    @MainActor
+    private func renderExport(
+        format: ExportFormat,
+        sessions: [WorkoutSession],
+        unit: WeightUnit,
+        progress: ((Double) -> Void)?
+    ) async -> String {
+        // Yield once so SwiftUI can render the loading state before heavy work starts.
+        await Task.yield()
+        switch format {
+        case .markdown:
+            return sessions.generateExportContent(unit: unit, progress: progress)
+        case .csv:
+            return sessions.generateCSV(unit: unit, progress: progress)
+        case .json:
+            progress?(0.5)
+            let data = sessions.generateJSON(unit: unit)
+            progress?(1.0)
+            return String(data: data, encoding: .utf8) ?? "{}"
+        }
+    }
+
+    private func performPreview() {
+        let filtered = matchedExportSessions
+        guard !filtered.isEmpty else {
+            showExportOptions = false
             showNoDataAlert = true
             return
         }
         let unit = appPreferences?.weightUnit ?? .kilogram
-        let content = completed.generateExportContent(unit: unit)
-        let tempDir = FileManager.default.temporaryDirectory
-        let fileURL = tempDir.appendingPathComponent("SetLog_训练记录.md")
-        try? content.write(to: fileURL, atomically: true, encoding: .utf8)
-        exportFileURL = fileURL
-        showExportShare = true
+        let chosenFormat = exportFormat
+        previewFormat = chosenFormat
+        previewSessionCount = filtered.count
+        previewContent = ""
+        previewProgress = 0
+        previewIsLoading = true
+        showExportOptions = false
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+            showExportPreview = true
+            previewTask?.cancel()
+            previewTask = Task { @MainActor in
+                let result = await renderExport(
+                    format: chosenFormat,
+                    sessions: filtered,
+                    unit: unit,
+                    progress: { p in
+                        Task { @MainActor in previewProgress = p }
+                    }
+                )
+                if Task.isCancelled { return }
+                previewContent = result
+                previewProgress = 1.0
+                previewIsLoading = false
+            }
+        }
+    }
+
+    private func performExportToFile() {
+        let filtered = matchedExportSessions
+        guard !filtered.isEmpty else {
+            showExportOptions = false
+            showNoDataAlert = true
+            return
+        }
+        let unit = appPreferences?.weightUnit ?? .kilogram
+        let chosenFormat = exportFormat
+
+        let stamp = DateFormatter.exportFilenameStamp.string(from: Date())
+        let fileName = "SetLog_训练记录_\(stamp).\(chosenFormat.fileExtension)"
+        let url = FileManager.default.temporaryDirectory.appendingPathComponent(fileName)
+
+        fileExportProgress = 0
+        fileExportInProgress = true
+        fileExportTask?.cancel()
+        fileExportTask = Task { @MainActor in
+            // Let the progress UI render before crunching the data.
+            await Task.yield()
+            do {
+                switch chosenFormat {
+                case .markdown:
+                    let content = filtered.generateExportContent(unit: unit) { p in
+                        Task { @MainActor in fileExportProgress = p }
+                    }
+                    if Task.isCancelled { return }
+                    try content.write(to: url, atomically: true, encoding: .utf8)
+                case .csv:
+                    let content = filtered.generateCSV(unit: unit) { p in
+                        Task { @MainActor in fileExportProgress = p }
+                    }
+                    if Task.isCancelled { return }
+                    try content.write(to: url, atomically: true, encoding: .utf8)
+                case .json:
+                    fileExportProgress = 0.5
+                    let data = filtered.generateJSON(unit: unit)
+                    if Task.isCancelled { return }
+                    try data.write(to: url, options: .atomic)
+                }
+            } catch {
+                fileExportInProgress = false
+                exportErrorMessage = "无法写入文件：\(error.localizedDescription)"
+                return
+            }
+
+            fileExportProgress = 1.0
+            fileExportInProgress = false
+            exportFileURL = url
+            exportShareItems = [url]
+            showExportOptions = false
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                showExportShare = true
+            }
+        }
     }
 
     private var syncNoticeCard: some View {
@@ -596,6 +779,243 @@ private struct ShareSheet: UIViewControllerRepresentable {
     }
 
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
+}
+
+enum ExportRangeSelection: String, CaseIterable, Identifiable {
+    case all
+    case last7
+    case last30
+    case custom
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .all: return "全部"
+        case .last7: return "近 7 天"
+        case .last30: return "近 30 天"
+        case .custom: return "自定义"
+        }
+    }
+}
+
+private struct ExportOptionsSheet: View {
+    @Binding var format: ExportFormat
+    @Binding var rangeSelection: ExportRangeSelection
+    @Binding var customStart: Date
+    @Binding var customEnd: Date
+    let matchedSessionCount: Int
+    let isWorking: Bool
+    let workingProgress: Double
+    let onPreview: () -> Void
+    let onShareFile: () -> Void
+    let onCancel: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            Form {
+                Section("导出格式") {
+                    Picker("格式", selection: $format) {
+                        ForEach(ExportFormat.allCases) { fmt in
+                            Text(fmt.displayName).tag(fmt)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    Text(formatDescription)
+                        .font(.system(size: 12))
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("时间范围") {
+                    Picker("范围", selection: $rangeSelection) {
+                        ForEach(ExportRangeSelection.allCases) { sel in
+                            Text(sel.displayName).tag(sel)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+
+                    if rangeSelection == .custom {
+                        DatePicker("开始", selection: $customStart, displayedComponents: .date)
+                        DatePicker("结束", selection: $customEnd, in: customStart..., displayedComponents: .date)
+                    }
+
+                    HStack {
+                        Text("匹配训练数")
+                        Spacer()
+                        Text("\(matchedSessionCount)")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                Section {
+                    Button(action: onPreview) {
+                        Label("预览 & 复制文本", systemImage: "doc.text.magnifyingglass")
+                    }
+                    .disabled(matchedSessionCount == 0 || isWorking)
+
+                    Button(action: onShareFile) {
+                        if isWorking {
+                            HStack(spacing: 10) {
+                                ProgressView()
+                                    .scaleEffect(0.8)
+                                Text("正在生成… \(Int(workingProgress * 100))%")
+                                    .fontWeight(.semibold)
+                            }
+                        } else {
+                            Label("保存 / 分享文件", systemImage: "square.and.arrow.up")
+                                .fontWeight(.semibold)
+                        }
+                    }
+                    .disabled(matchedSessionCount == 0 || isWorking)
+
+                    if isWorking {
+                        ProgressView(value: workingProgress)
+                    }
+                } footer: {
+                    Text("「预览 & 复制」无需写入文件，可直接复制全文到 Claude / 微信等。")
+                        .font(.system(size: 11))
+                }
+            }
+            .navigationTitle("导出训练记录")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(isWorking ? "停止" : "取消", action: onCancel)
+                }
+            }
+        }
+    }
+
+    private var formatDescription: String {
+        switch format {
+        case .markdown: return "Markdown：可读性强，适合粘贴给 Claude 等 AI 分析。"
+        case .csv: return "CSV：可在 Excel / Numbers 中打开做透视分析。"
+        case .json: return "JSON：结构化数据，便于程序处理。"
+        }
+    }
+}
+
+private struct ExportPreviewView: View {
+    let content: String
+    let format: ExportFormat
+    let sessionCount: Int
+    let isLoading: Bool
+    let progress: Double
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var copyToastVisible = false
+    @State private var showShare = false
+
+    var body: some View {
+        NavigationStack {
+            Group {
+                if isLoading {
+                    VStack(spacing: 16) {
+                        ProgressView(value: progress) {
+                            Text("正在生成 \(format.displayName) 内容…")
+                                .font(.system(size: 14, weight: .semibold))
+                        } currentValueLabel: {
+                            Text("\(Int(progress * 100))% · \(sessionCount) 次训练")
+                                .font(.system(size: 12))
+                                .foregroundStyle(.secondary)
+                        }
+                        .progressViewStyle(.linear)
+                        .padding(.horizontal, 28)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(AppTheme.bgPage)
+                } else {
+                    previewScroll
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if copyToastVisible {
+                    Text("已复制到剪贴板")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.black.opacity(0.85))
+                        .clipShape(Capsule())
+                        .padding(.bottom, 28)
+                        .transition(.opacity.combined(with: .move(edge: .bottom)))
+                }
+            }
+            .navigationTitle(navTitle)
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("关闭") { dismiss() }
+                }
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Button {
+                        showShare = true
+                    } label: {
+                        Image(systemName: "square.and.arrow.up")
+                    }
+                    .disabled(isLoading)
+                    Button {
+                        copyAll()
+                    } label: {
+                        Label("复制", systemImage: "doc.on.doc")
+                    }
+                    .disabled(isLoading)
+                }
+            }
+            .sheet(isPresented: $showShare) {
+                ShareSheet(activityItems: [content])
+            }
+        }
+    }
+
+    private var previewScroll: some View {
+        ScrollView {
+            Text(content)
+                .font(.system(.footnote, design: .monospaced))
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(16)
+        }
+        .background(AppTheme.bgPage)
+    }
+
+    private var navTitle: String {
+        if isLoading {
+            return "\(format.displayName) · \(sessionCount) 次"
+        }
+        let bytes = content.utf8.count
+        let sizeText: String
+        if bytes < 1024 {
+            sizeText = "\(bytes) B"
+        } else if bytes < 1024 * 1024 {
+            sizeText = String(format: "%.1f KB", Double(bytes) / 1024.0)
+        } else {
+            sizeText = String(format: "%.1f MB", Double(bytes) / (1024.0 * 1024.0))
+        }
+        return "\(format.displayName) · \(sessionCount) 次 · \(sizeText)"
+    }
+
+    private func copyAll() {
+        UIPasteboard.general.string = content
+        withAnimation(.easeInOut(duration: 0.2)) {
+            copyToastVisible = true
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 1.8) {
+            withAnimation(.easeInOut(duration: 0.25)) {
+                copyToastVisible = false
+            }
+        }
+    }
+}
+
+extension DateFormatter {
+    static let exportFilenameStamp: DateFormatter = {
+        let f = DateFormatter()
+        f.locale = Locale(identifier: "en_US_POSIX")
+        f.dateFormat = "yyyyMMdd_HHmm"
+        return f
+    }()
 }
 
 #Preview {

@@ -63,6 +63,8 @@ struct CurrentWorkoutView: View {
                         let targetIndex = draggingIndex >= 0 ? computeTargetIndex(from: draggingIndex, offset: dragTranslation, exercises: exercises) : -1
                         let draggedHeight = draggingIndex >= 0 ? (cardHeights[exercises[draggingIndex].id] ?? 220) : 220
 
+                        let currentExerciseID = exercises.first(where: { !$0.isFinished })?.id
+
                         VStack(spacing: 14) {
                             ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
                                 let isDragging = draggingExerciseID == exercise.id
@@ -103,6 +105,12 @@ struct CurrentWorkoutView: View {
                                     },
                                     onToggleWeightMode: {
                                         toggleWeightMode(for: exercise)
+                                    },
+                                    onToggleBodyweight: {
+                                        toggleIncludesBodyweight(for: exercise)
+                                    },
+                                    onUpdateBodyweight: { kg in
+                                        updateBodyweight(for: exercise, kg: kg)
                                     },
                                     onToggleSetType: { set in
                                         toggleSetType(for: set, in: workout)
@@ -148,7 +156,9 @@ struct CurrentWorkoutView: View {
                                     },
                                     onUpdateRPE: { set, value in
                                         updateRPE(for: set, value: value, in: workout)
-                                    }
+                                    },
+                                    isCurrent: exercise.id == currentExerciseID,
+                                    lastSummary: lastSetSummary(forExerciseNamed: exercise.name, weightUnit: weightUnit, excludingSession: workout)
                                 )
                                 .background(
                                     GeometryReader { geo in
@@ -184,7 +194,7 @@ struct CurrentWorkoutView: View {
                     }
                 }
                 .background(AppTheme.bgPage)
-                .navigationBarHidden(true)
+                .toolbar(.hidden, for: .navigationBar)
                 .ignoresSafeArea(edges: .bottom)
                 .toolbar(.hidden, for: .tabBar)
                 .safeAreaInset(edge: .top, spacing: 0) {
@@ -288,7 +298,7 @@ struct CurrentWorkoutView: View {
     }
 
     private func stickyHeader(workout: WorkoutSession) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+        HStack(alignment: .center, spacing: 16) {
             Button(action: {
                 dismiss()
             }) {
@@ -298,20 +308,14 @@ struct CurrentWorkoutView: View {
                     .frame(width: 40, height: 40)
             }
             .buttonStyle(.plain)
-            .padding(.top, 22)
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack(spacing: 10) {
-                    tagChip(title: "胸部训练")
-                    tagChip(title: "力量模式")
-                }
-
                 Text(elapsedTimeText(for: workout))
                     .font(.system(size: 23, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.fg1)
 
-                Text("进度: \(workout.completedSetCount)/\(max(workout.totalSetCount, 1)) 组  体积: \(volumeText(workout.totalVolumeKg))")
+                Text("进度: \(workout.completedSetCount)/\(max(workout.totalSetCount, 1)) 组  容量: \(volumeText(workout.totalVolumeKg))")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppTheme.fg2)
             }
@@ -352,10 +356,9 @@ struct CurrentWorkoutView: View {
                 Capsule()
                     .stroke(AppTheme.fg4, lineWidth: 1)
             )
-            .padding(.top, 22)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 16)
+        .padding(.top, 4)
         .padding(.bottom, 12)
         .background(AppTheme.bgCard)
         .overlay(alignment: .bottom) {
@@ -437,6 +440,12 @@ struct CurrentWorkoutView: View {
             }
             .frame(width: 56, height: 56)
 
+            Text("/ \(restSecondsText(workout.restTargetSeconds))")
+                .font(.system(size: 13, weight: .semibold, design: .rounded))
+                .monospacedDigit()
+                .foregroundStyle(AppTheme.fg3)
+                .accessibilityLabel("休息总时长 \(workout.restTargetSeconds) 秒")
+
             Spacer(minLength: 8)
 
             HStack(spacing: 10) {
@@ -485,11 +494,10 @@ struct CurrentWorkoutView: View {
 
     private func elapsedTimeText(for workout: WorkoutSession) -> String {
         let interval = workout.workoutElapsed(at: now)
-        let totalSeconds = Int(interval)
-        let hours = totalSeconds / 3600
-        let minutes = (totalSeconds % 3600) / 60
+        let totalSeconds = max(0, Int(interval))
+        let minutes = totalSeconds / 60
         let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+        return String(format: "%02d:%02d", minutes, seconds)
     }
 
     private func timeText(from totalSeconds: Int) -> String {
@@ -676,8 +684,7 @@ struct CurrentWorkoutView: View {
         }
 
         let baseKg = parsedValue.convertedWeight(from: weightUnit, to: .kilogram)
-        let exerciseWeightMode = set.exercise?.weightMode ?? .standard
-        set.weightKg = exerciseWeightMode == .singleHand ? baseKg * 2 : baseKg
+        set.weightKg = baseKg
         workout?.updatedAt = now
         try? modelContext.save()
     }
@@ -772,6 +779,7 @@ struct CurrentWorkoutView: View {
         workout.isCompleted = true
         workout.dateEnded = now
         workout.updatedAt = now
+        ExercisePreferences.apply(from: workout, in: modelContext)
         try? modelContext.save()
     }
 
@@ -950,6 +958,44 @@ struct CurrentWorkoutView: View {
         try? modelContext.save()
     }
 
+    private func toggleIncludesBodyweight(for exercise: WorkoutExercise) {
+        exercise.includesBodyweight.toggle()
+        try? modelContext.save()
+    }
+
+    private func updateBodyweight(for exercise: WorkoutExercise, kg: Double) {
+        exercise.bodyweightKg = kg
+        exercise.includesBodyweight = true
+        try? modelContext.save()
+    }
+
+    private func lastSetSummary(forExerciseNamed name: String, weightUnit: WeightUnit, excludingSession: WorkoutSession) -> String? {
+        let descriptor = FetchDescriptor<WorkoutExercise>(
+            predicate: #Predicate { $0.name == name }
+        )
+        guard let exercises = try? modelContext.fetch(descriptor) else { return nil }
+        let excludeID = excludingSession.id
+        let candidates = exercises
+            .filter { $0.session?.id != excludeID }
+            .flatMap { $0.sets ?? [] }
+            .filter { $0.isCompleted && !$0.isWarmup && $0.weightKg > 0 }
+        guard let mostRecent = candidates.max(by: { lhs, rhs in
+            let lhsDate = lhs.completedAt ?? lhs.exercise?.session?.dateStarted ?? .distantPast
+            let rhsDate = rhs.completedAt ?? rhs.exercise?.session?.dateStarted ?? .distantPast
+            return lhsDate < rhsDate
+        }) else { return nil }
+        let reps = mostRecent.actualReps ?? mostRecent.targetReps ?? 0
+        let weight = weightUnit == .pound ? mostRecent.weightKg * 2.2046226218 : mostRecent.weightKg
+        let weightStr: String
+        if weight.truncatingRemainder(dividingBy: 1) == 0 {
+            weightStr = String(format: "%.0f", weight)
+        } else {
+            weightStr = String(format: "%.1f", weight)
+        }
+        let unit = weightUnit == .pound ? "lb" : "kg"
+        return "\(weightStr)\(unit) × \(reps)"
+    }
+
     private func toggleSetType(for set: WorkoutSet, in workout: WorkoutSession) {
         set.setType = set.setType == .working ? .warmup : .working
         if set.isWarmup {
@@ -1084,6 +1130,8 @@ struct ExerciseEditorCard: View {
     let onCopyRepsDown: (WorkoutSet) -> Void
     let onAddSet: () -> Void
     let onToggleWeightMode: () -> Void
+    let onToggleBodyweight: () -> Void
+    let onUpdateBodyweight: (Double) -> Void
     let onToggleSetType: (WorkoutSet) -> Void
     let onDeleteSet: (WorkoutSet) -> Void
     let onAddWarmupSet: () -> Void
@@ -1095,8 +1143,11 @@ struct ExerciseEditorCard: View {
     let onDragEnded: () -> Void
     var onUpdateRPE: (WorkoutSet, Int?) -> Void = { _, _ in }
     var forceEditableRest: Bool = false
+    var isCurrent: Bool = false
+    var lastSummary: String? = nil
 
     @State private var isShowingEditRestSheet = false
+    @State private var isShowingBodyweightSheet = false
     @State private var isCollapsed = true
     @State private var rpeTrayExpandedSetID: UUID?
 
@@ -1104,22 +1155,67 @@ struct ExerciseEditorCard: View {
         exercise.weightMode == .singleHand ? "单边" : "重量"
     }
 
+    private var isHighlighted: Bool { isCollapsed && isCurrent }
+
+    private var strokeColor: Color {
+        if isDragging { return AppTheme.orange.opacity(0.3) }
+        if isHighlighted { return AppTheme.orange.opacity(0.45) }
+        return Color.black.opacity(0.04)
+    }
+
+    private var strokeWidth: CGFloat {
+        if isDragging { return 2 }
+        if isHighlighted { return 1.5 }
+        return 0.5
+    }
+
+    private var shadowColor: Color {
+        if isDragging { return Color.black.opacity(0.15) }
+        if isHighlighted { return AppTheme.orange.opacity(0.18) }
+        return Color.black.opacity(0.03)
+    }
+
+    private var shadowRadius: CGFloat {
+        if isDragging { return 16 }
+        if isHighlighted { return 14 }
+        return 8
+    }
+
+    private var shadowOffsetY: CGFloat {
+        if isDragging { return 6 }
+        if isHighlighted { return 6 }
+        return 3
+    }
+
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            // Header: name + action buttons
-            HStack(alignment: .center, spacing: 8) {
-                Text(exercise.name)
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundStyle(AppTheme.fg1)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .contentShape(Rectangle())
-                    .onTapGesture {
-                        withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                            isCollapsed.toggle()
-                        }
-                    }
+                                                                                                                                                                                                                                                                                                                                                                                                        VStack(alignment: .leading, spacing: isCollapsed ? 8 : 14) {
+                                                                                                                                                                                                                                                                                                                                                                                                            // Header: name + (current badge) + action buttons
+                                                                                                                                                                                                                                                                                                                                                                                                            HStack(alignment: .center, spacing: 8) {
+                                                                                                                                                                                                                                                                                                                                                                                                                HStack(spacing: 10) {
+                                                                                                                                                                                                                                                                                                                                                                                                                    Text(exercise.name)
+                                                                                                                                                                                                                                                                                                                                                                                                                        .font(.system(size: 16, weight: .bold))
+                                                                                                                                                                                                                                                                                                                                                                                                                        .kerning(-0.2)
+                                                                                                                                                                                                                                                                                                                                                                                                                        .foregroundStyle(AppTheme.fg1)
+                                                                                                                                                                                                                                                                                                                                                                                                                        .lineLimit(1)
+                                                                                                                                                                                                                                                                                                                                                                                                                        .minimumScaleFactor(0.8)
+
+                                                                                                                                                                                                                                                                                                                                                                                                                    if isCurrent {
+                                                                                                                                                                                                                                                                                                                                                                                                                        Text("当前")
+                                                                                                                                                                                                                                                                                                                                                                                                                            .font(.system(size: 12, weight: .bold))
+                                                                                                                                                                                                                                                                                                                                                                                                                            .foregroundStyle(AppTheme.orange)
+                                                                                                                                                                                                                                                                                                                                                                                                                            .padding(.horizontal, 9)
+                                                                                                                                                                                                                                                                                                                                                                                                                            .padding(.vertical, 4)
+                                                                                                                                                                                                                                                                                                                                                                                                                            .background(AppTheme.orange.opacity(0.15))
+                                                                                                                                                                                                                                                                                                                                                                                                                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                }
+                                                                                                                                                                                                                                                                                                                                                                                                                .frame(maxWidth: .infinity, alignment: .leading)
+                                                                                                                                                                                                                                                                                                                                                                                                                .contentShape(Rectangle())
+                                                                                                                                                                                                                                                                                                                                                                                                                .onTapGesture {
+                                                                                                                                                                                                                                                                                                                                                                                                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                                                                                                                                                                                                                                                                                                                                                                                                                        isCollapsed.toggle()
+                                                                                                                                                                                                                                                                                                                                                                                                                    }
+                                                                                                                                                                                                                                                                                                                                                                                                                }
 
                 // 更多菜单
                 Menu {
@@ -1141,40 +1237,51 @@ struct ExerciseEditorCard: View {
             }
 
             // Progress row — tap to collapse / expand
+            if !isCollapsed || lastSummary != nil {
             Button(action: {
                 withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
                     isCollapsed.toggle()
                 }
             }) {
                 HStack(alignment: .center, spacing: 8) {
-                    Text(exercise.progressText)
-                        .font(.system(size: 12, weight: .regular))
-                        .foregroundStyle(AppTheme.fg2)
-                        .lineLimit(1)
-                        .fixedSize(horizontal: true, vertical: false)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
+
                     if isCollapsed {
-                        HStack(spacing: 4) {
-                            ForEach(exercise.orderedSets) { set in
-                                if set.isWarmup {
-                                    Text("w")
-                                        .font(.system(size: 11, weight: .bold, design: .rounded))
-                                        .foregroundStyle(set.isCompleted ? AppTheme.orange : AppTheme.fg4)
-                                        .frame(width: 8, height: 8)
-                                } else if set.isCompleted {
-                                    Circle()
-                                        .fill(AppTheme.orange)
-                                        .frame(width: 8, height: 8)
-                                } else {
-                                    Circle()
-                                        .stroke(AppTheme.fg4, lineWidth: 1.5)
-                                        .frame(width: 8, height: 8)
-                                }
-                            }
-                        }
-                        .transition(.opacity)
+                        EmptyView()
                     } else {
+                        // 自重按钮
+                        Button(action: {
+                            if exercise.bodyweightKg == nil {
+                                isShowingBodyweightSheet = true
+                            } else {
+                                onToggleBodyweight()
+                            }
+                        }) {
+                            let isActive = exercise.includesBodyweight && exercise.bodyweightKg != nil
+                            HStack(spacing: 3) {
+                                Image(systemName: "figure.stand")
+                                    .font(.system(size: 11))
+                                Text("自重")
+                                    .font(.system(size: 11, weight: .semibold))
+                            }
+                            .foregroundStyle(isActive ? .white : AppTheme.fg2)
+                            .padding(.horizontal, 9)
+                            .padding(.vertical, 5)
+                            .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
+                            .clipShape(Capsule())
+                            .overlay(
+                                Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .simultaneousGesture(
+                            LongPressGesture(minimumDuration: 0.45)
+                                .onEnded { _ in
+                                    isShowingBodyweightSheet = true
+                                }
+                        )
+                        .animation(.easeInOut(duration: 0.2), value: exercise.includesBodyweight)
+
                         // 单边模式切换按钮
                         Button(action: onToggleWeightMode) {
                             let isActive = exercise.weightMode == .singleHand
@@ -1218,9 +1325,38 @@ struct ExerciseEditorCard: View {
                     }
 
                 }
-                .frame(height: 26)
+                .frame(height: isCollapsed ? 16 : 26)
             }
             .buttonStyle(.plain)
+            }
+
+            if isCollapsed {
+                HStack(spacing: 5) {
+                    ForEach(exercise.orderedSets) { set in
+                        if set.isWarmup {
+                            Text("w")
+                                .font(.system(size: 9, weight: .bold, design: .rounded))
+                                .foregroundStyle(set.isCompleted ? AppTheme.orange : AppTheme.fg4)
+                                .frame(width: 7, height: 7)
+                        } else if set.isCompleted {
+                            Circle()
+                                .fill(AppTheme.orange)
+                                .frame(width: 7, height: 7)
+                        } else {
+                            Circle()
+                                .fill(AppTheme.fg4.opacity(0.4))
+                                .frame(width: 7, height: 7)
+                        }
+                    }
+                }
+                .padding(.top, -4)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
+                        isCollapsed.toggle()
+                    }
+                }
+            }
 
             if !isCollapsed {
                 VStack(spacing: 10) {
@@ -1347,7 +1483,8 @@ struct ExerciseEditorCard: View {
                 ))
             }
         }
-        .padding(.horizontal, 16)
+        .padding(.leading, 16)
+        .padding(.trailing, 12)
         .padding(.vertical, 14)
         .background(AppTheme.bgCard)
         .contentShape(Rectangle())
@@ -1359,15 +1496,21 @@ struct ExerciseEditorCard: View {
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(isDragging ? AppTheme.orange.opacity(0.3) : Color.black.opacity(0.04), lineWidth: isDragging ? 2 : 0.5)
+                .stroke(strokeColor, lineWidth: strokeWidth)
         )
-        .shadow(color: isDragging ? Color.black.opacity(0.15) : Color.black.opacity(0.03), radius: isDragging ? 16 : 8, y: isDragging ? 6 : 3)
+        .shadow(color: shadowColor, radius: shadowRadius, y: shadowOffsetY)
         .scaleEffect(isDragging ? 1.02 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
         .sheet(isPresented: $isShowingEditRestSheet) {
             EditDefaultRestSheet(
                 currentSeconds: Int(exercise.workingSets.first?.restAfter ?? 90),
                 onConfirm: onUpdateDefaultRest
+            )
+        }
+        .sheet(isPresented: $isShowingBodyweightSheet) {
+            BodyweightInputSheet(
+                currentKg: exercise.bodyweightKg,
+                onConfirm: { kg in onUpdateBodyweight(kg) }
             )
         }
     }
@@ -1432,9 +1575,7 @@ struct WorkoutSetRow: View {
     @Environment(\.showToast) private var showToast
 
     private var weightDisplayValue: String {
-        let baseKg = set.weightKg
-        let displayKg = weightMode == .singleHand ? baseKg / 2 : baseKg
-        return displayKg.formattedWeight(unit: weightUnit, fractionDigits: 2)
+        return set.weightKg.formattedWeight(unit: weightUnit, fractionDigits: 2)
     }
 
     private var indexLabel: String {
@@ -2098,6 +2239,89 @@ private struct EditDefaultRestSheet: View {
             }
         }
         .presentationDetents([.height(260)])
+        .presentationDragIndicator(.visible)
+    }
+}
+
+private struct BodyweightInputSheet: View {
+    let currentKg: Double?
+    let onConfirm: (Double) -> Void
+    @Environment(\.dismiss) private var dismiss
+    @State private var text: String
+
+    init(currentKg: Double?, onConfirm: @escaping (Double) -> Void) {
+        self.currentKg = currentKg
+        self.onConfirm = onConfirm
+        if let kg = currentKg {
+            if kg.truncatingRemainder(dividingBy: 1) == 0 {
+                _text = State(initialValue: String(format: "%.0f", kg))
+            } else {
+                _text = State(initialValue: String(format: "%.1f", kg))
+            }
+        } else {
+            _text = State(initialValue: "")
+        }
+    }
+
+    private var hintText: String {
+        currentKg == nil
+            ? "首次需手动输入自重"
+            : "长按按钮可再次修改自重"
+    }
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 0) {
+                Spacer()
+
+                VStack(spacing: 10) {
+                    Text("请输入自重")
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(AppTheme.fg2)
+
+                    HStack(alignment: .firstTextBaseline, spacing: 6) {
+                        TextField("0", text: $text)
+                            .keyboardType(.decimalPad)
+                            .multilineTextAlignment(.center)
+                            .font(.system(size: 52, weight: .black, design: .rounded))
+                            .frame(width: 160)
+                        Text("kg")
+                            .font(.system(size: 26, weight: .bold))
+                            .foregroundStyle(AppTheme.fg2)
+                    }
+
+                    Text(hintText)
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppTheme.fg2)
+                        .padding(.top, 6)
+                }
+
+                Spacer()
+
+                Button(action: {
+                    if let kg = Double(text), kg > 0 { onConfirm(kg) }
+                    dismiss()
+                }) {
+                    Text("确认")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 50)
+                        .background(AppTheme.orange)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                }
+                .padding(.horizontal, 24)
+                .padding(.bottom, 32)
+            }
+            .navigationTitle(currentKg == nil ? "设置自重" : "修改自重")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("取消") { dismiss() }
+                }
+            }
+        }
+        .presentationDetents([.height(300)])
         .presentationDragIndicator(.visible)
     }
 }

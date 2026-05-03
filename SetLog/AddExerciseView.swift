@@ -450,12 +450,17 @@ struct AddExerciseView: View {
                 order: nextOrder,
                 session: session
             )
+            if let mode = selectedExercise.preferredWeightMode {
+                workoutExercise.weightMode = mode
+            }
+            let restSeconds = selectedExercise.preferredRestSeconds ?? 90
 
             workoutExercise.sets = (1...configuration.sets).map { index in
                 WorkoutSet(
                     index: index,
                     targetReps: configuration.reps,
                     weightKg: configuredWeightKg,
+                    restAfter: TimeInterval(restSeconds),
                     exercise: workoutExercise
                 )
             }
@@ -603,10 +608,11 @@ struct AddExerciseView: View {
             return
         }
 
+        let weightKg = exercise.preferredWeightKg ?? exercise.defaultWeightKg
         exerciseConfigurations[exerciseID] = ExerciseConfiguration(
             sets: exercise.defaultSets,
             reps: exercise.defaultReps,
-            weightText: exercise.defaultWeightKg.formattedWeight(unit: weightUnit)
+            weightText: weightKg.formattedWeight(unit: weightUnit)
         )
     }
 

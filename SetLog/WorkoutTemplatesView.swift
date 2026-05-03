@@ -9,6 +9,7 @@ import SwiftData
 import SwiftUI
 
 struct WorkoutTemplatesView: View {
+    @Environment(\.dismiss) private var dismiss
     @State private var selectedCategory = "全部"
     @State private var detailTemplate: WorkoutTemplate?
     @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var templates: [WorkoutTemplate]
@@ -87,11 +88,25 @@ struct WorkoutTemplatesView: View {
     }
 
     private var topBar: some View {
-        Text("训练模板")
-            .font(.system(size: 18, weight: .semibold))
-            .frame(maxWidth: .infinity)
-            .frame(height: 56)
-            .background(AppTheme.bgCard)
+        ZStack {
+            Text("训练模板")
+                .font(.system(size: 18, weight: .semibold))
+
+            HStack {
+                Button(action: { dismiss() }) {
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 17, weight: .semibold))
+                        .foregroundStyle(AppTheme.fg1)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
+                }
+                Spacer()
+            }
+            .padding(.horizontal, 4)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(height: 56)
+        .background(AppTheme.bgCard)
     }
 
     private var discoverHeader: some View {
@@ -113,7 +128,7 @@ struct WorkoutTemplatesView: View {
                     }) {
                         Text(category)
                             .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(selectedCategory == category ? Color.white : AppTheme.fg2)
+                            .foregroundStyle(selectedCategory == category ? AppTheme.invertedStrong : AppTheme.fg2)
                             .padding(.horizontal, 12)
                             .frame(height: 30)
                             .background(selectedCategory == category ? AppTheme.ctaFill : AppTheme.fillMedium.opacity(0.4))
@@ -158,7 +173,13 @@ struct WorkoutTemplatesView: View {
                 Spacer()
             }
 
-            VStack(spacing: 14) {
+            LazyVGrid(
+                columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ],
+                spacing: 12
+            ) {
                 ForEach(group.templates) { template in
                     WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
                         .contentShape(Rectangle())
@@ -226,74 +247,63 @@ private struct WorkoutTemplateCard: View {
     }
 
     private var exerciseSymbols: [String] {
-        let symbols = orderedExercises.prefix(4).map(\.symbolName)
+        let symbols = orderedExercises.prefix(3).map(\.symbolName)
         return symbols.isEmpty ? ["figure.strengthtraining.traditional"] : symbols
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(template.title)
-                        .font(.system(size: 24, weight: .bold))
+        VStack(alignment: .leading, spacing: 10) {
+            Text(template.title)
+                .font(.system(size: 17, weight: .bold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.9)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                    HStack(spacing: 10) {
-                        Label("\(template.estimatedDuration) 分钟", systemImage: "clock")
-                        Label(template.level, systemImage: "flame")
-                    }
-                    .font(.system(size: 12, weight: .medium))
-                    .foregroundStyle(AppTheme.fg2)
-                }
-
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 13, weight: .semibold))
-                    .foregroundStyle(.tertiary)
+            HStack(spacing: 8) {
+                Label("\(template.estimatedDuration) 分钟", systemImage: "clock")
+                Label(template.level, systemImage: "flame")
             }
+            .font(.system(size: 11, weight: .medium))
+            .foregroundStyle(AppTheme.fg2)
+            .lineLimit(1)
 
-            HStack(spacing: 10) {
+            HStack(spacing: 6) {
                 ForEach(exerciseSymbols, id: \.self) { symbol in
                     Image(systemName: symbol)
-                        .font(.system(size: 15, weight: .medium))
+                        .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppTheme.fg2)
-                        .frame(width: 36, height: 36)
+                        .frame(width: 26, height: 26)
                         .background(AppTheme.fillMedium)
-                        .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                 }
-
-                Spacer()
-
-                Text(template.category)
-                    .font(.system(size: 11, weight: .bold))
-                    .foregroundStyle(AppTheme.fg2)
-                    .padding(.horizontal, 10)
-                    .frame(height: 26)
-                    .background(AppTheme.fillMedium)
-                    .clipShape(Capsule())
+                Spacer(minLength: 0)
             }
+
+            Spacer(minLength: 0)
 
             Button(action: {
                 onApply(template)
             }) {
-                HStack(spacing: 8) {
+                HStack(spacing: 6) {
                     Image(systemName: "play")
-                        .font(.system(size: 12, weight: .bold))
+                        .font(.system(size: 11, weight: .bold))
                     Text("立即应用")
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 13, weight: .semibold))
                 }
-                .foregroundStyle(Color.white)
+                .foregroundStyle(AppTheme.invertedStrong)
                 .frame(maxWidth: .infinity)
-                .frame(height: 46)
+                .frame(height: 38)
                 .background(AppTheme.ctaFill)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
         }
-        .padding(16)
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
         .background(AppTheme.bgCard)
-        .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+        .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
-            RoundedRectangle(cornerRadius: 18, style: .continuous)
+            RoundedRectangle(cornerRadius: 16, style: .continuous)
                 .stroke(AppTheme.fillMedium, lineWidth: 1)
         )
     }

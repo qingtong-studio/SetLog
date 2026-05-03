@@ -149,6 +149,16 @@ struct ContentView: View {
         return mostRecent?.weightKg
     }
 
+    private func catalogItem(named name: String) -> ExerciseCatalogItem? {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return nil }
+        var descriptor = FetchDescriptor<ExerciseCatalogItem>(
+            predicate: #Predicate { $0.name == trimmed }
+        )
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
+    }
+
     private func createWorkout(from template: WorkoutTemplate) -> WorkoutSession {
         let session = WorkoutSession(
             title: template.title,
@@ -168,8 +178,14 @@ struct ContentView: View {
                 session: session
             )
 
-            let suggestedWeight = lastUserWeight(forExerciseNamed: templateExercise.name)
+            let prefs = catalogItem(named: templateExercise.name)
+            let suggestedWeight = prefs?.preferredWeightKg
+                ?? lastUserWeight(forExerciseNamed: templateExercise.name)
                 ?? templateExercise.defaultWeightKg
+            if let mode = prefs?.preferredWeightMode {
+                workoutExercise.weightMode = mode
+            }
+            let restSeconds = prefs?.preferredRestSeconds ?? 90
 
             workoutExercise.sets = (1...max(1, templateExercise.defaultSets)).map { index in
                 WorkoutSet(
@@ -177,6 +193,7 @@ struct ContentView: View {
                     targetReps: templateExercise.defaultReps,
                     actualReps: nil,
                     weightKg: suggestedWeight,
+                    restAfter: TimeInterval(restSeconds),
                     exercise: workoutExercise
                 )
             }
@@ -266,7 +283,7 @@ private struct HomeDashboardView: View {
             .padding(.bottom, 24)
         }
         .background(AppTheme.bgPage)
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
         .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
             now = value
         }

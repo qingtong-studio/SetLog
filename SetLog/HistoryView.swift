@@ -44,7 +44,7 @@ struct HistoryView: View {
             .padding(.bottom, 28)
         }
         .background(AppTheme.bgPage)
-        .navigationBarHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 
     // MARK: Top Bar
