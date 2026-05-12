@@ -794,12 +794,24 @@ struct CurrentWorkoutView: View {
     private func startRest(for set: WorkoutSet, in workout: WorkoutSession) {
         workout.restStartTime = now
         workout.restSourceSetID = set.id
-        workout.restTargetSeconds = max(0, Int(set.restAfter))
+        workout.restTargetSeconds = max(0, Int(restSeconds(for: set)))
         workout.restElapsedOffset = 0
         workout.restIsPaused = false
         workout.restLastUpdatedAt = now
         workout.restActualSeconds = nil
         scheduleRestNotification(seconds: workout.restTargetSeconds)
+    }
+
+    // 热身组最后一组之后紧跟正式组时,使用首个正式组的休息时间
+    private func restSeconds(for set: WorkoutSet) -> TimeInterval {
+        guard set.isWarmup, let exercise = set.exercise else { return set.restAfter }
+        let sets = exercise.orderedSets
+        guard let idx = sets.firstIndex(where: { $0.id == set.id }) else { return set.restAfter }
+        let next = sets.dropFirst(idx + 1).first
+        if let next, !next.isWarmup {
+            return next.restAfter
+        }
+        return set.restAfter
     }
 
     private func clearRest(for workout: WorkoutSession) {
@@ -1592,7 +1604,10 @@ struct WorkoutSetRow: View {
 
     private var statusCircleFill: Color {
         guard set.isCompleted else { return Color.clear }
-        if let rpe = set.rpe, !set.isWarmup {
+        if set.isWarmup {
+            return AppTheme.confirm
+        }
+        if let rpe = set.rpe {
             return AppTheme.rpeColor(rpe)
         }
         return AppTheme.orange
@@ -1933,9 +1948,14 @@ private struct SelectAllTextField: UIViewRepresentable {
         textField.keyboardType = keyboardType
         textField.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
 
-        let keyboard = NumericKeyboardInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 280))
+        let keyboard = NumericKeyboardInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 224))
         keyboard.targetTextField = textField
-        keyboard.onDismiss = { [weak textField] in
+        keyboard.onDismiss = { [weak textField, weak coordinator = context.coordinator] in
+            coordinator?.suppressNextCommit = true
+            textField?.resignFirstResponder()
+        }
+        keyboard.onConfirm = { [weak textField, weak coordinator = context.coordinator] in
+            if let tf = textField { coordinator?.commit(tf) }
             textField?.resignFirstResponder()
         }
         textField.inputView = keyboard
@@ -1981,6 +2001,8 @@ private struct SelectAllTextField: UIViewRepresentable {
         var onEndEditing: (() -> Void)?
         var valueKind: InputValueKind
         weak var keyboard: NumericKeyboardInputView?
+        var suppressNextCommit = false
+        var originalValue: String?
 
         init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void, onEndEditing: (() -> Void)?, valueKind: InputValueKind) {
             self.onBeginEditing = onBeginEditing
@@ -1990,6 +2012,7 @@ private struct SelectAllTextField: UIViewRepresentable {
         }
 
         func textFieldDidBeginEditing(_ textField: UITextField) {
+            originalValue = textField.text
             onBeginEditing()
             // Select all so typing immediately replaces the existing value
             DispatchQueue.main.async {
@@ -1998,7 +2021,12 @@ private struct SelectAllTextField: UIViewRepresentable {
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
-            commit(textField)
+            if suppressNextCommit {
+                textField.text = originalValue
+                suppressNextCommit = false
+            } else {
+                commit(textField)
+            }
             onEndEditing?()
         }
 

@@ -10,12 +10,13 @@ final class NumericKeyboardInputView: UIView {
         didSet { copyDownButton?.isEnabled = onCopyDown != nil }
     }
     var onDismiss: (() -> Void)?
+    var onConfirm: (() -> Void)?
 
     private var copyRightButton: UIButton?
     private var copyDownButton: UIButton?
 
     override var intrinsicContentSize: CGSize {
-        CGSize(width: UIView.noIntrinsicMetric, height: 280)
+        CGSize(width: UIView.noIntrinsicMetric, height: 224)
     }
 
     override init(frame: CGRect) {
@@ -29,75 +30,52 @@ final class NumericKeyboardInputView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupLayout() {
-        let toolbarStack = UIStackView()
-        toolbarStack.axis = .horizontal
-        toolbarStack.spacing = 8
-        toolbarStack.alignment = .center
-        toolbarStack.layoutMargins = UIEdgeInsets(top: 0, left: 4, bottom: 0, right: 4)
-        toolbarStack.isLayoutMarginsRelativeArrangement = true
+    private enum ActionStyle {
+        case dismiss
+        case secondary
+        case primary
+    }
 
-        let crBtn = makeToolButton(title: "→ 复制", action: #selector(copyRightTapped))
+    private func setupLayout() {
+        let dismissBtn = makeActionButton(title: "收起", style: .dismiss, action: #selector(dismissTapped))
+
+        let crBtn = makeActionButton(title: "复制", style: .secondary, action: #selector(copyRightTapped))
         crBtn.isEnabled = false
         copyRightButton = crBtn
 
-        let cdBtn = makeToolButton(title: "↓ 填充", action: #selector(copyDownTapped))
+        let cdBtn = makeActionButton(title: "填充", style: .secondary, action: #selector(copyDownTapped))
         cdBtn.isEnabled = false
         copyDownButton = cdBtn
 
-        let spacer = UIView()
-        spacer.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        let confirmBtn = makeActionButton(title: "确定", style: .primary, action: #selector(confirmTapped))
 
-        let dismissBtn = makeToolButton(title: "收起", action: #selector(dismissTapped))
-        dismissBtn.setTitleColor(AppTheme.uiOrange, for: .normal)
-
-        toolbarStack.addArrangedSubview(crBtn)
-        toolbarStack.addArrangedSubview(cdBtn)
-        toolbarStack.addArrangedSubview(spacer)
-        toolbarStack.addArrangedSubview(dismissBtn)
-        toolbarStack.heightAnchor.constraint(equalToConstant: 40).isActive = true
-
-        let separator = UIView()
-        separator.backgroundColor = UIColor.separator
-        separator.heightAnchor.constraint(equalToConstant: 0.5).isActive = true
-
-        let keys: [[String]] = [
-            ["1", "2", "3"],
-            ["4", "5", "6"],
-            ["7", "8", "9"],
-            [".", "0", "⌫"]
+        let rows: [[UIView]] = [
+            [makeKeyButton(title: "1"), makeKeyButton(title: "2"), makeKeyButton(title: "3"), dismissBtn],
+            [makeKeyButton(title: "4"), makeKeyButton(title: "5"), makeKeyButton(title: "6"), crBtn],
+            [makeKeyButton(title: "7"), makeKeyButton(title: "8"), makeKeyButton(title: "9"), cdBtn],
+            [makeKeyButton(title: "."), makeKeyButton(title: "0"), makeKeyButton(title: "⌫"), confirmBtn]
         ]
 
         let gridStack = UIStackView()
         gridStack.axis = .vertical
         gridStack.spacing = 6
         gridStack.distribution = .fillEqually
+        gridStack.translatesAutoresizingMaskIntoConstraints = false
 
-        for row in keys {
-            let rowStack = UIStackView()
+        for row in rows {
+            let rowStack = UIStackView(arrangedSubviews: row)
             rowStack.axis = .horizontal
             rowStack.spacing = 6
             rowStack.distribution = .fillEqually
-
-            for key in row {
-                let btn = makeKeyButton(title: key)
-                rowStack.addArrangedSubview(btn)
-            }
-
             gridStack.addArrangedSubview(rowStack)
         }
 
-        let mainStack = UIStackView(arrangedSubviews: [toolbarStack, separator, gridStack])
-        mainStack.axis = .vertical
-        mainStack.spacing = 4
-        mainStack.translatesAutoresizingMaskIntoConstraints = false
-
-        addSubview(mainStack)
+        addSubview(gridStack)
         NSLayoutConstraint.activate([
-            mainStack.topAnchor.constraint(equalTo: topAnchor, constant: 4),
-            mainStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
-            mainStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
-            mainStack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -4)
+            gridStack.topAnchor.constraint(equalTo: topAnchor, constant: 8),
+            gridStack.leadingAnchor.constraint(equalTo: leadingAnchor, constant: 12),
+            gridStack.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -12),
+            gridStack.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -8)
         ])
     }
 
@@ -116,13 +94,29 @@ final class NumericKeyboardInputView: UIView {
         return btn
     }
 
-    private func makeToolButton(title: String, action: Selector) -> UIButton {
+    private func makeActionButton(title: String, style: ActionStyle, action: Selector) -> UIButton {
         let btn = UIButton(type: .system)
         btn.setTitle(title, for: .normal)
-        btn.titleLabel?.font = .systemFont(ofSize: 13, weight: .semibold)
-        btn.setTitleColor(AppTheme.uiFg1, for: .normal)
-        btn.setTitleColor(AppTheme.uiFg3, for: .disabled)
+        btn.titleLabel?.font = .systemFont(ofSize: 15, weight: .semibold)
+        btn.layer.cornerRadius = 10
         btn.addTarget(self, action: action, for: .touchUpInside)
+
+        switch style {
+        case .dismiss:
+            btn.setTitleColor(AppTheme.uiFg2, for: .normal)
+            btn.backgroundColor = AppTheme.uiFillMedium
+        case .secondary:
+            btn.setTitleColor(AppTheme.uiFg1, for: .normal)
+            btn.setTitleColor(AppTheme.uiFg3, for: .disabled)
+            btn.backgroundColor = AppTheme.uiBgCard
+            btn.layer.shadowColor = UIColor.black.cgColor
+            btn.layer.shadowOffset = CGSize(width: 0, height: 1)
+            btn.layer.shadowOpacity = 0.06
+            btn.layer.shadowRadius = 2
+        case .primary:
+            btn.setTitleColor(.white, for: .normal)
+            btn.backgroundColor = AppTheme.uiOrange
+        }
         return btn
     }
 
@@ -151,5 +145,10 @@ final class NumericKeyboardInputView: UIView {
 
     @objc private func dismissTapped() {
         onDismiss?()
+    }
+
+    @objc private func confirmTapped() {
+        onConfirm?()
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
     }
 }
