@@ -5,6 +5,8 @@ import SwiftUI
 import UIKit
 import UserNotifications
 
+// MARK: - Toast environment
+
 private struct ShowToastKey: EnvironmentKey {
     static let defaultValue: (String) -> Void = { _ in }
 }
@@ -23,11 +25,44 @@ private struct CardHeightKey: PreferenceKey {
     }
 }
 
+// MARK: - Constants
+
+private enum CurrentWorkoutLayout {
+    static let cardSpacing: CGFloat = 14
+    static let defaultCardHeight: CGFloat = 220
+    static let restNotificationID = "rest-timer-complete"
+}
+
+private enum Haptics {
+    static func impact(_ style: UIImpactFeedbackGenerator.FeedbackStyle) {
+        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    }
+
+    static func notify(_ type: UINotificationFeedbackGenerator.FeedbackType) {
+        UINotificationFeedbackGenerator().notificationOccurred(type)
+    }
+}
+
+private enum WorkoutAnimation {
+    static let trayToggle = Animation.spring(response: 0.32, dampingFraction: 0.82)
+    static let cardCollapse = Animation.spring(response: 0.32, dampingFraction: 0.78)
+    static let dragRelease = Animation.spring(response: 0.35, dampingFraction: 0.7)
+    static let summaryFade = Animation.easeOut(duration: 0.3)
+}
+
+// MARK: - CurrentWorkoutView
+
 struct CurrentWorkoutView: View {
+    enum SummaryDisplayMode {
+        case fullscreen
+        case collapsed
+    }
+
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Environment(\.scenePhase) private var scenePhase
     @Query private var preferences: [AppPreferences]
+
     @State private var isPresentingAddExercise = false
     @State private var exerciseToReplace: WorkoutExercise?
     @State private var draggingExerciseID: UUID?
@@ -37,13 +72,8 @@ struct CurrentWorkoutView: View {
     @State private var focusedSetRowID: UUID?
     @State private var lastVibrationSecond: Int?
     @State private var summaryDisplayMode: SummaryDisplayMode?
-    @State private var toastMessage: String = ""
+    @State private var toastMessage = ""
     @State private var toastVisible = false
-
-    enum SummaryDisplayMode {
-        case fullscreen
-        case collapsed
-    }
 
     let workout: WorkoutSession
     let onFinish: (() -> Void)?
@@ -53,255 +83,194 @@ struct CurrentWorkoutView: View {
         self.onFinish = onFinish
     }
 
-    var body: some View {
-        ZStack(alignment: .bottom) {
-            ScrollViewReader { proxy in
-                ScrollView(showsIndicators: false) {
-                    VStack(spacing: 0) {
-                        let exercises = workout.orderedExercises
-                        let draggingIndex = exercises.firstIndex(where: { $0.id == draggingExerciseID }) ?? -1
-                        let targetIndex = draggingIndex >= 0 ? computeTargetIndex(from: draggingIndex, offset: dragTranslation, exercises: exercises) : -1
-                        let draggedHeight = draggingIndex >= 0 ? (cardHeights[exercises[draggingIndex].id] ?? 220) : 220
-
-                        let currentExerciseID = exercises.first(where: { !$0.isFinished })?.id
-
-                        VStack(spacing: 14) {
-                            ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
-                                let isDragging = draggingExerciseID == exercise.id
-                                let yOffset = isDragging ? dragTranslation : cardDisplacement(for: index, draggingIndex: draggingIndex, targetIndex: targetIndex, draggedHeight: draggedHeight)
-
-                                ExerciseEditorCard(
-                                    exercise: exercise,
-                                    weightUnit: weightUnit,
-                                    isDragging: isDragging,
-                                    isRestActive: workout.hasActiveRest,
-                                    restSourceSetID: workout.restSourceSetID,
-                                    onToggleSet: { set in
-                                        toggle(set: set, in: workout)
-                                    },
-                                    onUpdateWeight: { set, value in
-                                        updateWeight(for: set, value: value, in: workout)
-                                    },
-                                    onUpdateReps: { set, value in
-                                        updateReps(for: set, value: value, in: workout)
-                                    },
-                                    onUpdateRest: { set, value in
-                                        updateRest(for: set, value: value, in: workout)
-                                    },
-                                    onBeginEditingSet: { set in
-                                        focusedSetRowID = set.id
-                                    },
-                                    onCopyWeightRight: { set in
-                                        copyWeightRight(for: set, in: exercise, workout: workout)
-                                    },
-                                    onCopyWeightDown: { set in
-                                        copyWeightDown(for: set, in: exercise, workout: workout)
-                                    },
-                                    onCopyRepsDown: { set in
-                                        copyRepsDown(for: set, in: exercise, workout: workout)
-                                    },
-                                    onAddSet: {
-                                        addSet(to: exercise, in: workout)
-                                    },
-                                    onToggleWeightMode: {
-                                        toggleWeightMode(for: exercise)
-                                    },
-                                    onToggleBodyweight: {
-                                        toggleIncludesBodyweight(for: exercise)
-                                    },
-                                    onUpdateBodyweight: { kg in
-                                        updateBodyweight(for: exercise, kg: kg)
-                                    },
-                                    onToggleSetType: { set in
-                                        toggleSetType(for: set, in: workout)
-                                    },
-                                    onDeleteSet: { set in
-                                        deleteSet(set, from: exercise, in: workout)
-                                    },
-                                    onAddWarmupSet: {
-                                        addWarmupSet(to: exercise, in: workout)
-                                    },
-                                    onUpdateDefaultRest: { seconds in
-                                        updateDefaultRest(for: exercise, seconds: seconds, in: workout)
-                                    },
-                                    onReplaceExercise: {
-                                        exerciseToReplace = exercise
-                                    },
-                                    onDelete: {
-                                        delete(exercise: exercise, from: workout)
-                                    },
-                                    onDragActivated: {
-                                        if draggingExerciseID == nil {
-                                            draggingExerciseID = exercise.id
-                                            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                                        }
-                                    },
-                                    onDragChanged: { offset in
-                                        if draggingExerciseID == exercise.id {
-                                            dragTranslation = offset
-                                        }
-                                    },
-                                    onDragEnded: {
-                                        if draggingExerciseID != nil {
-                                            let fromIdx = exercises.firstIndex(where: { $0.id == draggingExerciseID }) ?? 0
-                                            let toIdx = computeTargetIndex(from: fromIdx, offset: dragTranslation, exercises: exercises)
-                                            if fromIdx != toIdx {
-                                                moveExercise(from: fromIdx, to: toIdx, in: workout)
-                                            }
-                                            withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                                                draggingExerciseID = nil
-                                                dragTranslation = 0
-                                            }
-                                        }
-                                    },
-                                    onUpdateRPE: { set, value in
-                                        updateRPE(for: set, value: value, in: workout)
-                                    },
-                                    isCurrent: exercise.id == currentExerciseID,
-                                    lastSummary: lastSetSummary(forExerciseNamed: exercise.name, weightUnit: weightUnit, excludingSession: workout)
-                                )
-                                .background(
-                                    GeometryReader { geo in
-                                        Color.clear.preference(
-                                            key: CardHeightKey.self,
-                                            value: [exercise.id: geo.size.height]
-                                        )
-                                    }
-                                )
-                                .offset(y: yOffset)
-                                .zIndex(isDragging ? 10 : 0)
-                                .animation(.interactiveSpring(response: 0.35, dampingFraction: 0.8), value: yOffset)
-                            }
-                            .onPreferenceChange(CardHeightKey.self) { heights in
-                                cardHeights.merge(heights) { $1 }
-                            }
-
-                            addExerciseButton
-                            footerText
-                        }
-                        .padding(.horizontal, 16)
-                        .padding(.top, 16)
-                        .padding(.bottom, workout.hasActiveRest ? 112 : 28)
-                    }
-                }
-                .onChange(of: focusedSetRowID) { _, rowID in
-                    guard let rowID else {
-                        return
-                    }
-
-                    withAnimation(.easeInOut(duration: 0.22)) {
-                        proxy.scrollTo(rowID, anchor: .center)
-                    }
-                }
-                .background(AppTheme.bgPage)
-                .toolbar(.hidden, for: .navigationBar)
-                .ignoresSafeArea(edges: .bottom)
-                .toolbar(.hidden, for: .tabBar)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    stickyHeader(workout: workout)
-                }
-                .sheet(isPresented: $isPresentingAddExercise) {
-                    NavigationStack {
-                        AddExerciseView(session: workout)
-                    }
-                    .presentationDetents([.large])
-                    .presentationDragIndicator(.visible)
-                }
-                .sheet(item: $exerciseToReplace) { exercise in
-                    ExerciseReplacePickerView(exercise: exercise, workout: workout)
-                        .presentationDetents([.large])
-                        .presentationDragIndicator(.visible)
-                }
-            }
-
-            if workout.hasActiveRest && summaryDisplayMode == nil {
-                collapsedRestCard(workout: workout)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(1)
-            }
-
-            if summaryDisplayMode == .collapsed {
-                collapsedSummaryBar(workout: workout)
-                    .padding(.horizontal, 16)
-                    .padding(.bottom, 8)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .zIndex(2)
-            }
-
-            if summaryDisplayMode == .fullscreen {
-                WorkoutSummaryOverlay(
-                    workout: workout,
-                    weightUnit: weightUnit,
-                    onCollapse: {
-                        withAnimation(.easeOut(duration: 0.3)) {
-                            summaryDisplayMode = .collapsed
-                        }
-                    },
-                    onDismiss: {
-                        dismissSummaryAndFinish()
-                    }
-                )
-                .transition(.opacity)
-                .zIndex(3)
-            }
-
-            if toastVisible {
-                Text(toastMessage)
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 10)
-                    .background(AppTheme.fg1.opacity(0.9))
-                    .clipShape(Capsule())
-                    .padding(.bottom, workout.hasActiveRest ? 116 : 32)
-                    .transition(.move(edge: .bottom).combined(with: .opacity))
-                    .allowsHitTesting(false)
-                    .zIndex(4)
-            }
-        }
-        .environment(\.showToast, presentToast)
-        .animation(.easeOut(duration: 0.24), value: workout.hasActiveRest)
-        .animation(.easeOut(duration: 0.3), value: summaryDisplayMode != nil)
-        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
-            now = value
-            handleRestTick(for: workout)
-        }
-        .onChange(of: scenePhase) { _, newPhase in
-            guard workout.hasActiveRest else {
-                return
-            }
-
-            switch newPhase {
-            case .background, .inactive:
-                persistRestSnapshot(for: workout)
-            case .active:
-                restoreRestSnapshot(for: workout)
-            @unknown default:
-                break
-            }
-        }
-        // Use simultaneousGesture so keyboard dismissal never blocks button taps in the header
-        .simultaneousGesture(TapGesture().onEnded {
-            UIApplication.shared.sendAction(
-                #selector(UIResponder.resignFirstResponder),
-                to: nil,
-                from: nil,
-                for: nil
-            )
-        })
-    }
-
     private var weightUnit: WeightUnit {
         preferences.first?.weightUnit ?? .kilogram
     }
 
-    private func stickyHeader(workout: WorkoutSession) -> some View {
+    var body: some View {
+        ZStack(alignment: .bottom) {
+            scrollContent
+            bottomOverlay
+        }
+        .background(WindowKeyboardDismiss())
+        .environment(\.showToast, presentToast)
+        .animation(.easeOut(duration: 0.24), value: workout.hasActiveRest)
+        .animation(WorkoutAnimation.summaryFade, value: summaryDisplayMode != nil)
+        .onReceive(Timer.publish(every: 1, on: .main, in: .common).autoconnect()) { value in
+            now = value
+            handleRestTick()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            handleScenePhaseChange(newPhase)
+        }
+    }
+
+    // MARK: - Top-level layout pieces
+
+    private var scrollContent: some View {
+        ScrollView(showsIndicators: false) {
+            exerciseStack
+        }
+        .background(AppTheme.bgPage)
+        .toolbar(.hidden, for: .navigationBar)
+        .ignoresSafeArea(edges: .bottom)
+        .toolbar(.hidden, for: .tabBar)
+        .safeAreaInset(edge: .top, spacing: 0) { stickyHeader }
+        .sheet(isPresented: $isPresentingAddExercise) {
+            NavigationStack { AddExerciseView(session: workout) }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+        .sheet(item: $exerciseToReplace) { exercise in
+            ExerciseReplacePickerView(exercise: exercise, workout: workout)
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var exerciseStack: some View {
+        let exercises = workout.orderedExercises
+        let draggingIndex = exercises.firstIndex { $0.id == draggingExerciseID } ?? -1
+        let targetIndex = draggingIndex >= 0
+            ? computeTargetIndex(from: draggingIndex, offset: dragTranslation, exercises: exercises)
+            : -1
+        let draggedHeight = draggingIndex >= 0
+            ? (cardHeights[exercises[draggingIndex].id] ?? CurrentWorkoutLayout.defaultCardHeight)
+            : CurrentWorkoutLayout.defaultCardHeight
+        let currentExerciseID = exercises.first { !$0.isFinished }?.id
+
+        return VStack(spacing: 0) {
+            VStack(spacing: CurrentWorkoutLayout.cardSpacing) {
+                ForEach(Array(exercises.enumerated()), id: \.element.id) { index, exercise in
+                    let isDragging = draggingExerciseID == exercise.id
+                    let yOffset = isDragging
+                        ? dragTranslation
+                        : cardDisplacement(
+                            for: index,
+                            draggingIndex: draggingIndex,
+                            targetIndex: targetIndex,
+                            draggedHeight: draggedHeight
+                        )
+
+                    exerciseCard(for: exercise, exercises: exercises, currentExerciseID: currentExerciseID)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: CardHeightKey.self,
+                                    value: [exercise.id: geo.size.height]
+                                )
+                            }
+                        )
+                        .offset(y: yOffset)
+                        .zIndex(isDragging ? 10 : 0)
+                        .animation(.interactiveSpring(response: 0.35, dampingFraction: 0.8), value: yOffset)
+                }
+                .onPreferenceChange(CardHeightKey.self) { heights in
+                    cardHeights.merge(heights) { $1 }
+                }
+
+                addExerciseButton
+                footerText
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 16)
+            .padding(.bottom, workout.hasActiveRest ? 112 : 28)
+        }
+    }
+
+    private func exerciseCard(
+        for exercise: WorkoutExercise,
+        exercises: [WorkoutExercise],
+        currentExerciseID: UUID?
+    ) -> some View {
+        ExerciseEditorCard(
+            exercise: exercise,
+            weightUnit: weightUnit,
+            isDragging: draggingExerciseID == exercise.id,
+            isRestActive: workout.hasActiveRest,
+            restSourceSetID: workout.restSourceSetID,
+            onToggleSet: { toggle(set: $0) },
+            onUpdateWeight: { updateWeight(for: $0, value: $1) },
+            onUpdateReps: { updateReps(for: $0, value: $1) },
+            onUpdateRest: { updateRest(for: $0, value: $1) },
+            onBeginEditingSet: { focusedSetRowID = $0.id },
+            onCopyWeightRight: { copyWeightRight(for: $0, in: exercise) },
+            onCopyWeightDown: { copyWeightDown(for: $0, in: exercise) },
+            onCopyRepsDown: { copyRepsDown(for: $0, in: exercise) },
+            onAddSet: { addSet(to: exercise) },
+            onToggleWeightMode: { toggleWeightMode(for: exercise) },
+            onToggleBodyweight: { toggleIncludesBodyweight(for: exercise) },
+            onUpdateBodyweight: { updateBodyweight(for: exercise, kg: $0) },
+            onToggleSetType: { toggleSetType(for: $0) },
+            onDeleteSet: { deleteSet($0, from: exercise) },
+            onAddWarmupSet: { addWarmupSet(to: exercise) },
+            onUpdateDefaultRest: { updateDefaultRest(for: exercise, seconds: $0) },
+            onReplaceExercise: { exerciseToReplace = exercise },
+            onDelete: { delete(exercise: exercise) },
+            onDragActivated: { activateDrag(for: exercise) },
+            onDragChanged: { handleDragChange(for: exercise, offset: $0) },
+            onDragEnded: { endDrag(in: exercises) },
+            onUpdateRPE: { updateRPE(for: $0, value: $1) },
+            isCurrent: exercise.id == currentExerciseID,
+            lastSummary: lastSetSummary(forExerciseNamed: exercise.name),
+            savedBodyweightKg: preferences.first?.bodyweightKg
+        )
+    }
+
+    @ViewBuilder
+    private var bottomOverlay: some View {
+        if workout.hasActiveRest && summaryDisplayMode == nil {
+            floatingBar(zIndex: 1) { collapsedRestCard }
+        }
+
+        if summaryDisplayMode == .collapsed {
+            floatingBar(zIndex: 2) { collapsedSummaryBar }
+        }
+
+        if summaryDisplayMode == .fullscreen {
+            WorkoutSummaryOverlay(
+                workout: workout,
+                weightUnit: weightUnit,
+                onCollapse: {
+                    withAnimation(WorkoutAnimation.summaryFade) { summaryDisplayMode = .collapsed }
+                },
+                onDismiss: dismissSummaryAndFinish
+            )
+            .transition(.opacity)
+            .zIndex(3)
+        }
+
+        if toastVisible {
+            Text(toastMessage)
+                .font(.system(size: 14, weight: .semibold))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 18)
+                .padding(.vertical, 10)
+                .background(AppTheme.fg1.opacity(0.9))
+                .clipShape(Capsule())
+                .padding(.bottom, workout.hasActiveRest ? 116 : 32)
+                .transition(.move(edge: .bottom).combined(with: .opacity))
+                .allowsHitTesting(false)
+                .zIndex(4)
+        }
+    }
+
+    private func floatingBar<Content: View>(
+        zIndex: Double,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        content()
+            .padding(.horizontal, 16)
+            .padding(.bottom, 8)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+            .zIndex(zIndex)
+    }
+
+    // MARK: - Sticky header
+
+    private var stickyHeader: some View {
         HStack(alignment: .center, spacing: 16) {
-            Button(action: {
-                dismiss()
-            }) {
+            Button(action: { dismiss() }) {
                 Image(systemName: "chevron.left")
                     .font(.system(size: 19, weight: .bold))
                     .foregroundStyle(AppTheme.fg1)
@@ -310,12 +279,12 @@ struct CurrentWorkoutView: View {
             .buttonStyle(.plain)
 
             VStack(alignment: .leading, spacing: 8) {
-                Text(elapsedTimeText(for: workout))
+                Text(elapsedTimeText)
                     .font(.system(size: 23, weight: .black, design: .rounded))
                     .monospacedDigit()
                     .foregroundStyle(AppTheme.fg1)
 
-                Text("进度: \(workout.completedSetCount)/\(max(workout.totalSetCount, 1)) 组  容量: \(volumeText(workout.totalVolumeKg))")
+                Text("进度: \(workout.completedSetCount)/\(max(workout.totalSetCount, 1)) 组  容量: \(workout.totalVolumeKg.formattedVolume(unit: weightUnit))")
                     .font(.system(size: 11, weight: .bold))
                     .foregroundStyle(AppTheme.fg2)
             }
@@ -325,10 +294,13 @@ struct CurrentWorkoutView: View {
 
             HStack(spacing: 0) {
                 Menu {
-                    Button(role: .destructive) {
-                        delete(workout: workout)
-                    } label: {
+                    Button(role: .destructive, action: deleteWorkout) {
                         Label("删除该训练", systemImage: "trash")
+                    }
+                    if canSaveBackToTemplate {
+                        Button(action: saveChangesToTemplate) {
+                            Label("保存并返回", systemImage: "square.and.arrow.down")
+                        }
                     }
                 } label: {
                     Image(systemName: "ellipsis")
@@ -337,14 +309,12 @@ struct CurrentWorkoutView: View {
                         .frame(width: 29, height: 32)
                 }
 
-                Button(action: {
-                    handlePrimaryAction(for: workout)
-                }) {
-                    Text(primaryActionTitle(for: workout))
+                Button(action: handlePrimaryAction) {
+                    Text(primaryActionTitle)
                         .font(.system(size: 13, weight: .bold))
                         .foregroundStyle(.white)
                         .frame(width: 50, height: 32)
-                        .background(primaryActionColor(for: workout))
+                        .background(primaryActionColor)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -352,46 +322,23 @@ struct CurrentWorkoutView: View {
             .padding(3)
             .background(AppTheme.bgPage)
             .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(AppTheme.fg4, lineWidth: 1)
-            )
+            .overlay(Capsule().stroke(AppTheme.fg4, lineWidth: 1))
         }
         .padding(.horizontal, 20)
         .padding(.top, 4)
         .padding(.bottom, 12)
         .background(AppTheme.bgCard)
         .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.black.opacity(0.06))
-                .frame(height: 1)
+            Rectangle().fill(Color.black.opacity(0.06)).frame(height: 1)
         }
         .shadow(color: Color.black.opacity(0.04), radius: 8, y: 3)
     }
 
-    private func tagChip(title: String) -> some View {
-        Text(title)
-            .font(.system(size: 10, weight: .bold))
-            .foregroundStyle(.primary)
-            .frame(width: 40, height: 15)
-            .frame(width: 50, height: 17)
-            .background(AppTheme.bgCard)
-            .clipShape(Capsule())
-            .overlay(
-                Capsule()
-                    .stroke(AppTheme.orange.opacity(0.32), lineWidth: 1.1)
-            )
-    }
-
     private var addExerciseButton: some View {
-        Button(action: {
-            isPresentingAddExercise = true
-        }) {
+        Button(action: { isPresentingAddExercise = true }) {
             HStack(spacing: 8) {
-                Image(systemName: "plus")
-                    .font(.system(size: 14, weight: .bold))
-                Text("增加训练动作")
-                    .font(.system(size: 15, weight: .bold))
+                Image(systemName: "plus").font(.system(size: 14, weight: .bold))
+                Text("增加训练动作").font(.system(size: 15, weight: .bold))
             }
             .foregroundStyle(.primary)
             .frame(maxWidth: .infinity)
@@ -413,21 +360,19 @@ struct CurrentWorkoutView: View {
             .padding(.bottom, 8)
     }
 
-    private func collapsedRestCard(workout: WorkoutSession) -> some View {
+    // MARK: - Rest card / summary bar
+
+    private var collapsedRestCard: some View {
         let remainingSeconds = workout.restRemainingSeconds(at: now)
         let progress = workout.restProgress(at: now)
 
         return HStack(spacing: 14) {
             ZStack {
-                Circle()
-                    .stroke(AppTheme.orange.opacity(0.18), lineWidth: 6)
+                Circle().stroke(AppTheme.orange.opacity(0.18), lineWidth: 6)
 
                 Circle()
                     .trim(from: 0, to: max(0.08, 1 - progress))
-                    .stroke(
-                        AppTheme.orange,
-                        style: StrokeStyle(lineWidth: 6, lineCap: .round)
-                    )
+                    .stroke(AppTheme.orange, style: StrokeStyle(lineWidth: 6, lineCap: .round))
                     .rotationEffect(.degrees(-90))
                     .animation(.linear(duration: 1), value: progress)
 
@@ -451,602 +396,38 @@ struct CurrentWorkoutView: View {
             HStack(spacing: 10) {
                 HStack(spacing: 0) {
                     RestAdjustButton(symbol: "+10s", accessibilityLabel: "增加十秒") {
-                        adjustRest(for: workout, delta: 10)
+                        adjustRest(delta: 10)
                     }
-
-                    Rectangle()
-                        .fill(AppTheme.fg4)
-                        .frame(width: 1, height: 18)
-
+                    Rectangle().fill(AppTheme.fg4).frame(width: 1, height: 18)
                     RestAdjustButton(symbol: "-10s", accessibilityLabel: "减少十秒") {
-                        adjustRest(for: workout, delta: -10)
+                        adjustRest(delta: -10)
                     }
                 }
                 .frame(width: 103, height: 44)
                 .background(AppTheme.fillSubtle)
                 .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
 
-                Button("跳过") {
-                    finishRest(for: workout)
-                }
-                .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(.white)
-                .frame(width: 54, height: 44)
-                .background(AppTheme.orange)
-                .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                .shadow(color: AppTheme.orange.opacity(0.25), radius: 10, y: 4)
-                .accessibilityLabel("提前完成休息")
-                .accessibilityHint("立即结束当前休息倒计时")
+                Button("跳过") { finishRest() }
+                    .font(.system(size: 16, weight: .bold))
+                    .foregroundStyle(.white)
+                    .frame(width: 54, height: 44)
+                    .background(AppTheme.orange)
+                    .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    .shadow(color: AppTheme.orange.opacity(0.25), radius: 10, y: 4)
+                    .accessibilityLabel("提前完成休息")
+                    .accessibilityHint("立即结束当前休息倒计时")
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 14)
         .frame(maxWidth: .infinity, minHeight: 88)
-        .background(AppTheme.bgCard)
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .overlay(
-            RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(Color.black.opacity(0.04), lineWidth: 1)
-        )
-        .shadow(color: Color.black.opacity(0.10), radius: 18, y: 10)
+        .floatingCardStyle()
         .accessibilityElement(children: .contain)
     }
 
-    private func elapsedTimeText(for workout: WorkoutSession) -> String {
-        let interval = workout.workoutElapsed(at: now)
-        let totalSeconds = max(0, Int(interval))
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-
-    private func timeText(from totalSeconds: Int) -> String {
-        if totalSeconds >= 3600 {
-            let hours = totalSeconds / 3600
-            let minutes = (totalSeconds % 3600) / 60
-            let seconds = totalSeconds % 60
-            return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
-        }
-
-        let minutes = totalSeconds / 60
-        let seconds = totalSeconds % 60
-        return String(format: "%02d:%02d", minutes, seconds)
-    }
-
-    private func restSecondsText(_ seconds: Int) -> String {
-        let clampedSeconds = min(max(0, seconds), 999)
-        return "\(clampedSeconds)s"
-    }
-
-    private func volumeText(_ value: Double) -> String {
-        value.formattedVolume(unit: weightUnit)
-    }
-
-    private func toggle(set: WorkoutSet, in workout: WorkoutSession) {
-        // Block completing other sets while rest timer is active
-        if workout.hasActiveRest && !set.isCompleted && set.id != workout.restSourceSetID {
-            UINotificationFeedbackGenerator().notificationOccurred(.warning)
-            return
-        }
-
-        let toggledSetID = set.id
-        set.isCompleted.toggle()
-        set.actualReps = set.actualReps ?? set.targetReps
-        set.completedAt = set.isCompleted ? now : nil
-        workout.updatedAt = now
-
-        if set.isCompleted {
-            set.recordedRestSeconds = nil
-            if !workout.workoutIsRunning {
-                if workout.isCompleted {
-                    workout.isCompleted = false
-                    workout.dateEnded = nil
-                }
-                startWorkoutTimer(for: workout)
-            }
-            startRest(for: set, in: workout)
-            provideNotificationFeedback(.success)
-        } else {
-            set.recordedRestSeconds = nil
-            set.rpe = nil
-            if workout.restSourceSetID == toggledSetID {
-                clearRest(for: workout)
-            }
-        }
-
-        try? modelContext.save()
-    }
-
-    private func updateRPE(for set: WorkoutSet, value: Int?, in workout: WorkoutSession) {
-        guard set.isCompleted, !set.isWarmup else { return }
-        set.rpe = value
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func addSet(to exercise: WorkoutExercise, in workout: WorkoutSession) {
-        let sourceSet = exercise.orderedSets.last
-        let newSet = WorkoutSet(
-            index: exercise.orderedSets.count + 1,
-            targetReps: sourceSet?.targetReps,
-            actualReps: nil,
-            weightKg: sourceSet?.weightKg ?? 0,
-            restAfter: sourceSet?.restAfter ?? 90,
-            exercise: exercise
-        )
-        if exercise.sets == nil { exercise.sets = [] }
-        exercise.sets?.append(newSet)
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutExercise, in workout: WorkoutSession) {
-        if workout.restSourceSetID == set.id {
-            clearRest(for: workout)
-        }
-        exercise.sets?.removeAll { $0.id == set.id }
-        modelContext.delete(set)
-        // Reindex: warmups first, then working
-        let warmups = exercise.warmupSets
-        let workings = exercise.workingSets
-        for (i, s) in (warmups + workings).enumerated() { s.index = i + 1 }
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func delete(exercise: WorkoutExercise, from workout: WorkoutSession) {
-        if exercise.orderedSets.contains(where: { $0.id == workout.restSourceSetID }) {
-            clearRest(for: workout)
-        }
-
-        if let index = workout.exercises?.firstIndex(where: { $0.id == exercise.id }) {
-            workout.exercises?.remove(at: index)
-        }
-
-        for (index, item) in workout.orderedExercises.enumerated() {
-            item.order = index
-        }
-
-        modelContext.delete(exercise)
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func moveExercise(from sourceIndex: Int, to destinationIndex: Int, in workout: WorkoutSession) {
-        var exercises = workout.orderedExercises
-        let exercise = exercises.remove(at: sourceIndex)
-        exercises.insert(exercise, at: destinationIndex)
-        for (i, ex) in exercises.enumerated() {
-            ex.order = i
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func computeTargetIndex(from startIndex: Int, offset: CGFloat, exercises: [WorkoutExercise]) -> Int {
-        let spacing: CGFloat = 14
-        var positions: [CGFloat] = [0]
-        for i in 0..<max(0, exercises.count - 1) {
-            let h = cardHeights[exercises[i].id] ?? 220
-            positions.append(positions.last! + h + spacing)
-        }
-        guard startIndex < exercises.count else { return startIndex }
-        let draggedHeight = cardHeights[exercises[startIndex].id] ?? 220
-        let newCenter = positions[startIndex] + draggedHeight / 2 + offset
-
-        var bestIndex = startIndex
-        var bestDist = CGFloat.infinity
-        for i in 0..<exercises.count {
-            let h = cardHeights[exercises[i].id] ?? 220
-            let center = positions[i] + h / 2
-            let dist = abs(newCenter - center)
-            if dist < bestDist {
-                bestDist = dist
-                bestIndex = i
-            }
-        }
-        return bestIndex
-    }
-
-    private func cardDisplacement(for index: Int, draggingIndex: Int, targetIndex: Int, draggedHeight: CGFloat) -> CGFloat {
-        guard draggingIndex >= 0, index != draggingIndex else { return 0 }
-        let shift = draggedHeight + 14
-        if targetIndex > draggingIndex, index > draggingIndex, index <= targetIndex {
-            return -shift
-        } else if targetIndex < draggingIndex, index >= targetIndex, index < draggingIndex {
-            return shift
-        }
-        return 0
-    }
-
-    private func replaceExercise(_ exercise: WorkoutExercise, with catalogItem: ExerciseCatalogItem, in workout: WorkoutSession) {
-        exercise.name = catalogItem.name
-        exercise.category = catalogItem.category
-        workout.updatedAt = now
-        try? modelContext.save()
-        exerciseToReplace = nil
-    }
-
-    private func delete(workout: WorkoutSession) {
-        clearRest(for: workout)
-        modelContext.delete(workout)
-        try? modelContext.save()
-        if let onFinish {
-            onFinish()
-        } else {
-            dismiss()
-        }
-    }
-
-    private func updateWeight(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard let parsedValue = InputValueSanitizer.parseWeight(value) else {
-            return
-        }
-
-        let baseKg = parsedValue.convertedWeight(from: weightUnit, to: .kilogram)
-        set.weightKg = baseKg
-        workout?.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func updateReps(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard let parsedValue = InputValueSanitizer.parseInteger(value) else {
-            return
-        }
-
-        set.actualReps = parsedValue
-        workout?.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func updateRest(for set: WorkoutSet, value: String, in workout: WorkoutSession?) {
-        guard set.canEditRecordedRest, let parsedValue = InputValueSanitizer.parseInteger(value) else {
-            return
-        }
-
-        set.recordedRestSeconds = parsedValue
-        set.restAfter = TimeInterval(parsedValue)
-        workout?.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func stopAllTimers(for workout: WorkoutSession) {
-        clearRest(for: workout)
-        workout.restTargetSeconds = 0
-        if workout.workoutIsRunning, let workoutTimerStartedAt = workout.workoutTimerStartedAt {
-            workout.workoutElapsedOffset += max(0, now.timeIntervalSince(workoutTimerStartedAt))
-        }
-        workout.workoutTimerStartedAt = nil
-        workout.workoutIsRunning = false
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func startWorkoutTimer(for workout: WorkoutSession) {
-        guard !workout.workoutIsRunning else {
-            return
-        }
-        workout.workoutTimerStartedAt = now
-        workout.workoutIsRunning = true
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func handlePrimaryAction(for workout: WorkoutSession) {
-        if workout.workoutIsRunning {
-            completeWorkout(workout)
-            withAnimation(.easeOut(duration: 0.3)) {
-                summaryDisplayMode = .fullscreen
-            }
-        } else {
-            // If the workout was previously completed, un-complete it so the timer can resume
-            if workout.isCompleted {
-                workout.isCompleted = false
-                workout.dateEnded = nil
-            }
-            startWorkoutTimer(for: workout)
-        }
-    }
-
-    private func dismissSummaryAndFinish() {
-        summaryDisplayMode = nil
-        if let onFinish {
-            onFinish()
-        } else {
-            dismiss()
-        }
-    }
-
-    private func primaryActionTitle(for workout: WorkoutSession) -> String {
-        if workout.workoutIsRunning {
-            return "结束"
-        }
-        return workout.workoutHasStarted ? "继续" : "开始"
-    }
-
-    private func primaryActionColor(for workout: WorkoutSession) -> Color {
-        workout.workoutIsRunning ? AppTheme.orange : AppTheme.confirm
-    }
-
-    private func completeWorkout(_ workout: WorkoutSession) {
-        clearRest(for: workout)
-        workout.restTargetSeconds = 0
-        if workout.workoutIsRunning, let workoutTimerStartedAt = workout.workoutTimerStartedAt {
-            workout.workoutElapsedOffset += max(0, now.timeIntervalSince(workoutTimerStartedAt))
-        }
-        workout.workoutTimerStartedAt = nil
-        workout.workoutIsRunning = false
-        workout.isCompleted = true
-        workout.dateEnded = now
-        workout.updatedAt = now
-        ExercisePreferences.apply(from: workout, in: modelContext)
-        try? modelContext.save()
-    }
-
-    private func latestCompletedSet(in workout: WorkoutSession) -> WorkoutSet? {
-        workout.orderedExercises
-            .flatMap(\.orderedSets)
-            .filter({ $0.isCompleted })
-            .sorted(by: { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) })
-            .first
-    }
-
-    private func startRest(for set: WorkoutSet, in workout: WorkoutSession) {
-        workout.restStartTime = now
-        workout.restSourceSetID = set.id
-        workout.restTargetSeconds = max(0, Int(restSeconds(for: set)))
-        workout.restElapsedOffset = 0
-        workout.restIsPaused = false
-        workout.restLastUpdatedAt = now
-        workout.restActualSeconds = nil
-        scheduleRestNotification(seconds: workout.restTargetSeconds)
-    }
-
-    // 热身组最后一组之后紧跟正式组时,使用首个正式组的休息时间
-    private func restSeconds(for set: WorkoutSet) -> TimeInterval {
-        guard set.isWarmup, let exercise = set.exercise else { return set.restAfter }
-        let sets = exercise.orderedSets
-        guard let idx = sets.firstIndex(where: { $0.id == set.id }) else { return set.restAfter }
-        let next = sets.dropFirst(idx + 1).first
-        if let next, !next.isWarmup {
-            return next.restAfter
-        }
-        return set.restAfter
-    }
-
-    private func clearRest(for workout: WorkoutSession) {
-        workout.restStartTime = nil
-        workout.restSourceSetID = nil
-        workout.restElapsedOffset = 0
-        workout.restIsPaused = false
-        workout.restLastUpdatedAt = now
-        workout.restActualSeconds = nil
-        cancelRestNotification()
-    }
-
-    private func finishRest(for workout: WorkoutSession, natural: Bool = false) {
-        let actualSeconds = Int(workout.restElapsed(at: now))
-        let targetSeconds = workout.restTargetSeconds
-        workout.restActualSeconds = actualSeconds
-        if let sourceSetID = workout.restSourceSetID,
-           let sourceSet = workout.orderedExercises
-            .flatMap(\.orderedSets)
-            .first(where: { $0.id == sourceSetID }) {
-            // Natural end: record configured target. Skipped: record elapsed seconds.
-            sourceSet.recordedRestSeconds = natural ? targetSeconds : min(actualSeconds, targetSeconds)
-            // If rest duration was adjusted, propagate the new target to subsequent uncompleted sets
-            if Int(sourceSet.restAfter) != targetSeconds,
-               let exercise = sourceSet.exercise {
-                let exerciseSets = exercise.orderedSets
-                if let idx = exerciseSets.firstIndex(where: { $0.id == sourceSetID }) {
-                    for i in (idx + 1)..<exerciseSets.count {
-                        let nextSet = exerciseSets[i]
-                        if !nextSet.isCompleted {
-                            nextSet.restAfter = TimeInterval(targetSeconds)
-                        }
-                    }
-                }
-            }
-        }
-        clearRest(for: workout)
-        try? modelContext.save()
-        provideNotificationFeedback(.success)
-    }
-
-    private func adjustRest(for workout: WorkoutSession, delta: Int) {
-        workout.restTargetSeconds = max(0, workout.restTargetSeconds + delta)
-        workout.restLastUpdatedAt = now
-        if workout.restTargetSeconds == 0 {
-            finishRest(for: workout)
-        } else {
-            let remaining = workout.restRemainingSeconds(at: now)
-            scheduleRestNotification(seconds: remaining)
-            try? modelContext.save()
-            provideImpactFeedback(style: .light)
-        }
-    }
-
-    private func handleRestTick(for workout: WorkoutSession) {
-        guard workout.hasActiveRest else {
-            lastVibrationSecond = nil
-            return
-        }
-
-        let remaining = workout.restRemainingSeconds(at: now)
-
-        if remaining == 0 {
-            AudioServicesPlaySystemSound(SystemSoundID(1007))
-            finishRest(for: workout, natural: true)
-            lastVibrationSecond = nil
-            return
-        }
-
-        if remaining >= 1 && remaining <= 10 && lastVibrationSecond != remaining {
-            lastVibrationSecond = remaining
-            if remaining <= 3 {
-                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
-            } else {
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-            }
-        }
-    }
-
-    private func persistRestSnapshot(for workout: WorkoutSession) {
-        guard workout.hasActiveRest else {
-            return
-        }
-
-        if !workout.restIsPaused {
-            workout.restElapsedOffset = workout.restElapsed(at: now)
-            workout.restStartTime = now
-        }
-        workout.restLastUpdatedAt = now
-        try? modelContext.save()
-    }
-
-    private func restoreRestSnapshot(for workout: WorkoutSession) {
-        guard workout.hasActiveRest else {
-            return
-        }
-
-        // Sync now to real time since the Timer may not have fired yet
-        now = Date.now
-
-        // If timer expired while in background, finish immediately
-        let remaining = workout.restRemainingSeconds(at: now)
-        if remaining <= 0 {
-            finishRest(for: workout, natural: true)
-            return
-        }
-
-        workout.restLastUpdatedAt = now
-        try? modelContext.save()
-    }
-
-    private func copyWeightRight(for set: WorkoutSet, in exercise: WorkoutExercise, workout: WorkoutSession) {
-        let orderedSets = exercise.orderedSets
-        guard let currentIndex = orderedSets.firstIndex(where: { $0.id == set.id }),
-              currentIndex + 1 < orderedSets.count else { return }
-        let nextSet = orderedSets[currentIndex + 1]
-        guard !nextSet.isCompleted else { return }
-        nextSet.weightKg = set.weightKg
-        workout.updatedAt = now
-        try? modelContext.save()
-        provideImpactFeedback(style: .light)
-    }
-
-    private func copyWeightDown(for set: WorkoutSet, in exercise: WorkoutExercise, workout: WorkoutSession) {
-        let orderedSets = exercise.orderedSets
-        guard let currentIndex = orderedSets.firstIndex(where: { $0.id == set.id }) else { return }
-        for i in (currentIndex + 1)..<orderedSets.count {
-            let targetSet = orderedSets[i]
-            guard !targetSet.isCompleted else { continue }
-            targetSet.weightKg = set.weightKg
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
-        provideImpactFeedback(style: .light)
-    }
-
-    private func copyRepsDown(for set: WorkoutSet, in exercise: WorkoutExercise, workout: WorkoutSession) {
-        let orderedSets = exercise.orderedSets
-        guard let currentIndex = orderedSets.firstIndex(where: { $0.id == set.id }) else { return }
-        let reps = set.actualReps ?? set.targetReps
-        for i in (currentIndex + 1)..<orderedSets.count {
-            let targetSet = orderedSets[i]
-            guard !targetSet.isCompleted else { continue }
-            if let reps {
-                targetSet.actualReps = reps
-                targetSet.targetReps = reps
-            }
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
-        provideImpactFeedback(style: .light)
-    }
-
-    private func toggleWeightMode(for exercise: WorkoutExercise) {
-        exercise.weightMode = exercise.weightMode == .standard ? .singleHand : .standard
-        try? modelContext.save()
-    }
-
-    private func toggleIncludesBodyweight(for exercise: WorkoutExercise) {
-        exercise.includesBodyweight.toggle()
-        try? modelContext.save()
-    }
-
-    private func updateBodyweight(for exercise: WorkoutExercise, kg: Double) {
-        exercise.bodyweightKg = kg
-        exercise.includesBodyweight = true
-        try? modelContext.save()
-    }
-
-    private func lastSetSummary(forExerciseNamed name: String, weightUnit: WeightUnit, excludingSession: WorkoutSession) -> String? {
-        let descriptor = FetchDescriptor<WorkoutExercise>(
-            predicate: #Predicate { $0.name == name }
-        )
-        guard let exercises = try? modelContext.fetch(descriptor) else { return nil }
-        let excludeID = excludingSession.id
-        let candidates = exercises
-            .filter { $0.session?.id != excludeID }
-            .flatMap { $0.sets ?? [] }
-            .filter { $0.isCompleted && !$0.isWarmup && $0.weightKg > 0 }
-        guard let mostRecent = candidates.max(by: { lhs, rhs in
-            let lhsDate = lhs.completedAt ?? lhs.exercise?.session?.dateStarted ?? .distantPast
-            let rhsDate = rhs.completedAt ?? rhs.exercise?.session?.dateStarted ?? .distantPast
-            return lhsDate < rhsDate
-        }) else { return nil }
-        let reps = mostRecent.actualReps ?? mostRecent.targetReps ?? 0
-        let weight = weightUnit == .pound ? mostRecent.weightKg * 2.2046226218 : mostRecent.weightKg
-        let weightStr: String
-        if weight.truncatingRemainder(dividingBy: 1) == 0 {
-            weightStr = String(format: "%.0f", weight)
-        } else {
-            weightStr = String(format: "%.1f", weight)
-        }
-        let unit = weightUnit == .pound ? "lb" : "kg"
-        return "\(weightStr)\(unit) × \(reps)"
-    }
-
-    private func toggleSetType(for set: WorkoutSet, in workout: WorkoutSession) {
-        set.setType = set.setType == .working ? .warmup : .working
-        if set.isWarmup {
-            set.restAfter = min(set.restAfter, 60)
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func addWarmupSet(to exercise: WorkoutExercise, in workout: WorkoutSession) {
-        let existingWarmups = exercise.warmupSets
-        let source = existingWarmups.last
-        let newSet = WorkoutSet(
-            index: existingWarmups.count + 1,
-            targetReps: source?.targetReps ?? exercise.workingSets.first?.targetReps ?? 10,
-            weightKg: source?.weightKg ?? (exercise.workingSets.first?.weightKg ?? 20) * 0.5,
-            restAfter: source?.restAfter ?? 60,
-            setTypeRawValue: SetType.warmup.rawValue,
-            exercise: exercise
-        )
-        if exercise.sets == nil { exercise.sets = [] }
-        exercise.sets?.append(newSet)
-        // Reindex: existing warmups, then new warmup at bottom, then working sets
-        for (i, ws) in existingWarmups.enumerated() {
-            ws.index = i + 1
-        }
-        newSet.index = existingWarmups.count + 1
-        for (i, ws) in exercise.workingSets.enumerated() {
-            ws.index = existingWarmups.count + 1 + i + 1
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
-    }
-
-    private func collapsedSummaryBar(workout: WorkoutSession) -> some View {
+    private var collapsedSummaryBar: some View {
         Button(action: {
-            withAnimation(.easeOut(duration: 0.3)) {
-                summaryDisplayMode = .fullscreen
-            }
+            withAnimation(WorkoutAnimation.summaryFade) { summaryDisplayMode = .fullscreen }
         }) {
             HStack(spacing: 14) {
                 Image(systemName: "checkmark.circle.fill")
@@ -1054,9 +435,8 @@ struct CurrentWorkoutView: View {
                     .foregroundStyle(AppTheme.confirm)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("训练已完成")
-                        .font(.system(size: 14, weight: .bold))
-                    Text(workout.title + " · " + elapsedTimeText(for: workout))
+                    Text("训练已完成").font(.system(size: 14, weight: .bold))
+                    Text(workout.title + " · " + elapsedTimeText)
                         .font(.system(size: 12, weight: .medium))
                         .foregroundStyle(AppTheme.fg2)
                 }
@@ -1070,16 +450,621 @@ struct CurrentWorkoutView: View {
             .padding(.horizontal, 16)
             .padding(.vertical, 14)
             .frame(maxWidth: .infinity)
-            .background(AppTheme.bgCard)
-            .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-            .overlay(
-                RoundedRectangle(cornerRadius: 20, style: .continuous)
-                    .stroke(Color.black.opacity(0.04), lineWidth: 1)
-            )
-            .shadow(color: Color.black.opacity(0.10), radius: 18, y: 10)
+            .floatingCardStyle()
         }
         .buttonStyle(.plain)
     }
+
+    // MARK: - Display helpers
+
+    private var elapsedTimeText: String {
+        let totalSeconds = max(0, Int(workout.workoutElapsed(at: now)))
+        let hours = totalSeconds / 3600
+        let minutes = (totalSeconds % 3600) / 60
+        let seconds = totalSeconds % 60
+        return String(format: "%02d:%02d:%02d", hours, minutes, seconds)
+    }
+
+    private func restSecondsText(_ seconds: Int) -> String {
+        "\(min(max(0, seconds), 999))s"
+    }
+
+    private var primaryActionTitle: String {
+        if workout.workoutIsRunning { return "结束" }
+        return workout.workoutHasStarted ? "继续" : "开始"
+    }
+
+    private var primaryActionColor: Color {
+        workout.workoutIsRunning ? AppTheme.orange : AppTheme.confirm
+    }
+
+    // MARK: - Persistence helpers
+
+    /// Stamps `updatedAt` and saves. Use for any mutation that changes session data.
+    private func commit(touchUpdatedAt: Bool = true) {
+        if touchUpdatedAt { workout.updatedAt = now }
+        try? modelContext.save()
+    }
+
+    // MARK: - Set mutations
+
+    private func toggle(set: WorkoutSet) {
+        // Block completing other sets while rest timer is active
+        if workout.hasActiveRest && !set.isCompleted && set.id != workout.restSourceSetID {
+            Haptics.notify(.warning)
+            return
+        }
+
+        let toggledSetID = set.id
+        set.isCompleted.toggle()
+        set.actualReps = set.actualReps ?? set.targetReps
+        set.completedAt = set.isCompleted ? now : nil
+
+        if set.isCompleted {
+            set.recordedRestSeconds = nil
+            if !workout.workoutIsRunning {
+                resumeIfCompleted()
+                startWorkoutTimer()
+            }
+            startRest(for: set)
+            Haptics.notify(.success)
+        } else {
+            set.recordedRestSeconds = nil
+            set.rpe = nil
+            if workout.restSourceSetID == toggledSetID {
+                clearRest()
+            }
+        }
+
+        commit()
+    }
+
+    private func resumeIfCompleted() {
+        guard workout.isCompleted else { return }
+        workout.isCompleted = false
+        workout.dateEnded = nil
+    }
+
+    private func updateRPE(for set: WorkoutSet, value: Int?) {
+        guard set.isCompleted, !set.isWarmup else { return }
+        set.rpe = value
+        commit()
+    }
+
+    private func addSet(to exercise: WorkoutExercise) {
+        let sourceSet = exercise.orderedSets.last
+        let newSet = WorkoutSet(
+            index: exercise.orderedSets.count + 1,
+            targetReps: sourceSet?.targetReps,
+            actualReps: nil,
+            weightKg: sourceSet?.weightKg ?? 0,
+            restAfter: sourceSet?.restAfter ?? 90,
+            exercise: exercise
+        )
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
+        commit()
+    }
+
+    private func deleteSet(_ set: WorkoutSet, from exercise: WorkoutExercise) {
+        if workout.restSourceSetID == set.id { clearRest() }
+        exercise.sets?.removeAll { $0.id == set.id }
+        modelContext.delete(set)
+        reindexSets(in: exercise)
+        commit()
+    }
+
+    private func reindexSets(in exercise: WorkoutExercise) {
+        for (i, s) in (exercise.warmupSets + exercise.workingSets).enumerated() {
+            s.index = i + 1
+        }
+    }
+
+    private func delete(exercise: WorkoutExercise) {
+        if exercise.orderedSets.contains(where: { $0.id == workout.restSourceSetID }) {
+            clearRest()
+        }
+
+        if let index = workout.exercises?.firstIndex(where: { $0.id == exercise.id }) {
+            workout.exercises?.remove(at: index)
+        }
+
+        for (index, item) in workout.orderedExercises.enumerated() {
+            item.order = index
+        }
+
+        modelContext.delete(exercise)
+        commit()
+    }
+
+    private func updateWeight(for set: WorkoutSet, value: String) {
+        guard let parsedValue = InputValueSanitizer.parseWeight(value) else { return }
+        set.weightKg = parsedValue.convertedWeight(from: weightUnit, to: .kilogram)
+        commit()
+    }
+
+    private func updateReps(for set: WorkoutSet, value: String) {
+        guard let parsedValue = InputValueSanitizer.parseInteger(value) else { return }
+        set.actualReps = parsedValue
+        commit()
+    }
+
+    private func updateRest(for set: WorkoutSet, value: String) {
+        guard set.canEditRecordedRest, let parsedValue = InputValueSanitizer.parseInteger(value) else {
+            return
+        }
+        set.recordedRestSeconds = parsedValue
+        set.restAfter = TimeInterval(parsedValue)
+        commit()
+    }
+
+    private func toggleSetType(for set: WorkoutSet) {
+        set.setType = set.setType == .working ? .warmup : .working
+        if set.isWarmup {
+            set.restAfter = min(set.restAfter, 60)
+        }
+        commit()
+    }
+
+    private func addWarmupSet(to exercise: WorkoutExercise) {
+        let existingWarmups = exercise.warmupSets
+        let firstWorking = exercise.workingSets.first
+        let source = existingWarmups.last
+        let newSet = WorkoutSet(
+            index: existingWarmups.count + 1,
+            targetReps: source?.targetReps ?? firstWorking?.targetReps ?? 10,
+            weightKg: source?.weightKg ?? (firstWorking?.weightKg ?? 20) * 0.5,
+            restAfter: source?.restAfter ?? 60,
+            setTypeRawValue: SetType.warmup.rawValue,
+            exercise: exercise
+        )
+        if exercise.sets == nil { exercise.sets = [] }
+        exercise.sets?.append(newSet)
+        reindexSets(in: exercise)
+        commit()
+    }
+
+    // MARK: - Copy helpers
+
+    private func copyWeightRight(for set: WorkoutSet, in exercise: WorkoutExercise) {
+        let sets = exercise.orderedSets
+        guard let idx = sets.firstIndex(where: { $0.id == set.id }),
+              idx + 1 < sets.count else { return }
+        let next = sets[idx + 1]
+        guard !next.isCompleted else { return }
+        next.weightKg = set.weightKg
+        commit()
+        Haptics.impact(.light)
+    }
+
+    private func copyWeightDown(for set: WorkoutSet, in exercise: WorkoutExercise) {
+        applyToFollowingSets(after: set, in: exercise) { $0.weightKg = set.weightKg }
+    }
+
+    private func copyRepsDown(for set: WorkoutSet, in exercise: WorkoutExercise) {
+        guard let reps = set.actualReps ?? set.targetReps else { return }
+        applyToFollowingSets(after: set, in: exercise) {
+            $0.actualReps = reps
+            $0.targetReps = reps
+        }
+    }
+
+    private func applyToFollowingSets(
+        after set: WorkoutSet,
+        in exercise: WorkoutExercise,
+        update: (WorkoutSet) -> Void
+    ) {
+        let sets = exercise.orderedSets
+        guard let idx = sets.firstIndex(where: { $0.id == set.id }) else { return }
+        for i in (idx + 1)..<sets.count where !sets[i].isCompleted {
+            update(sets[i])
+        }
+        commit()
+        Haptics.impact(.light)
+    }
+
+    // MARK: - Exercise mode toggles
+
+    private func toggleWeightMode(for exercise: WorkoutExercise) {
+        exercise.weightMode = exercise.weightMode == .standard ? .singleHand : .standard
+        commit(touchUpdatedAt: false)
+    }
+
+    private func toggleIncludesBodyweight(for exercise: WorkoutExercise) {
+        exercise.includesBodyweight.toggle()
+        commit(touchUpdatedAt: false)
+    }
+
+    private func updateBodyweight(for exercise: WorkoutExercise, kg: Double) {
+        exercise.bodyweightKg = kg
+        exercise.includesBodyweight = true
+        // Mirror to user-level preferences so it can be reused across exercises
+        // and edited from Profile without re-entering each time.
+        ensurePreferencesExist()
+        if let prefs = preferences.first {
+            prefs.bodyweightKg = kg
+            prefs.updatedAt = .now
+        }
+        commit(touchUpdatedAt: false)
+    }
+
+    private func ensurePreferencesExist() {
+        guard preferences.isEmpty else { return }
+        modelContext.insert(AppPreferences())
+    }
+
+    private func updateDefaultRest(for exercise: WorkoutExercise, seconds: Int) {
+        for set in exercise.workingSets {
+            set.restAfter = TimeInterval(seconds)
+        }
+        commit()
+    }
+
+    // MARK: - Drag & reorder
+
+    private func activateDrag(for exercise: WorkoutExercise) {
+        guard draggingExerciseID == nil else { return }
+        draggingExerciseID = exercise.id
+        Haptics.impact(.medium)
+    }
+
+    private func handleDragChange(for exercise: WorkoutExercise, offset: CGFloat) {
+        guard draggingExerciseID == exercise.id else { return }
+        dragTranslation = offset
+    }
+
+    private func endDrag(in exercises: [WorkoutExercise]) {
+        guard draggingExerciseID != nil else { return }
+        let fromIdx = exercises.firstIndex { $0.id == draggingExerciseID } ?? 0
+        let toIdx = computeTargetIndex(from: fromIdx, offset: dragTranslation, exercises: exercises)
+        if fromIdx != toIdx {
+            moveExercise(from: fromIdx, to: toIdx)
+        }
+        withAnimation(WorkoutAnimation.dragRelease) {
+            draggingExerciseID = nil
+            dragTranslation = 0
+        }
+    }
+
+    private func moveExercise(from sourceIndex: Int, to destinationIndex: Int) {
+        var exercises = workout.orderedExercises
+        let exercise = exercises.remove(at: sourceIndex)
+        exercises.insert(exercise, at: destinationIndex)
+        for (i, ex) in exercises.enumerated() { ex.order = i }
+        commit()
+    }
+
+    private func computeTargetIndex(
+        from startIndex: Int,
+        offset: CGFloat,
+        exercises: [WorkoutExercise]
+    ) -> Int {
+        let spacing = CurrentWorkoutLayout.cardSpacing
+        var positions: [CGFloat] = [0]
+        for i in 0..<max(0, exercises.count - 1) {
+            let h = cardHeights[exercises[i].id] ?? CurrentWorkoutLayout.defaultCardHeight
+            positions.append(positions.last! + h + spacing)
+        }
+        guard startIndex < exercises.count else { return startIndex }
+        let draggedHeight = cardHeights[exercises[startIndex].id] ?? CurrentWorkoutLayout.defaultCardHeight
+        let newCenter = positions[startIndex] + draggedHeight / 2 + offset
+
+        var bestIndex = startIndex
+        var bestDist = CGFloat.infinity
+        for i in 0..<exercises.count {
+            let h = cardHeights[exercises[i].id] ?? CurrentWorkoutLayout.defaultCardHeight
+            let center = positions[i] + h / 2
+            let dist = abs(newCenter - center)
+            if dist < bestDist {
+                bestDist = dist
+                bestIndex = i
+            }
+        }
+        return bestIndex
+    }
+
+    private func cardDisplacement(
+        for index: Int,
+        draggingIndex: Int,
+        targetIndex: Int,
+        draggedHeight: CGFloat
+    ) -> CGFloat {
+        guard draggingIndex >= 0, index != draggingIndex else { return 0 }
+        let shift = draggedHeight + CurrentWorkoutLayout.cardSpacing
+        if targetIndex > draggingIndex, index > draggingIndex, index <= targetIndex {
+            return -shift
+        }
+        if targetIndex < draggingIndex, index >= targetIndex, index < draggingIndex {
+            return shift
+        }
+        return 0
+    }
+
+    // MARK: - Workout lifecycle
+
+    private func deleteWorkout() {
+        clearRest()
+        modelContext.delete(workout)
+        try? modelContext.save()
+        finishOrDismiss()
+    }
+
+    /// Visible only when the session was started from a named template and the
+    /// active mode permits writing back (e.g. deload mode is read-only).
+    private var canSaveBackToTemplate: Bool {
+        guard workout.startModeBehavior.allowsTemplateSaveBack else { return false }
+        guard let name = workout.templateName?.trimmingCharacters(in: .whitespacesAndNewlines), !name.isEmpty else {
+            return false
+        }
+        return matchingTemplate(named: name) != nil
+    }
+
+    private func matchingTemplate(named name: String) -> WorkoutTemplate? {
+        var descriptor = FetchDescriptor<WorkoutTemplate>(
+            predicate: #Predicate { $0.title == name }
+        )
+        descriptor.fetchLimit = 1
+        return try? modelContext.fetch(descriptor).first
+    }
+
+    /// Persist current exercise/set edits back to the source template, then
+    /// dismiss the workout view without ending the session.
+    private func saveChangesToTemplate() {
+        guard let name = workout.templateName, let template = matchingTemplate(named: name) else { return }
+
+        let workoutExercises = workout.orderedExercises
+        let existingTemplateExercises = (template.exercises ?? []).sorted { $0.order < $1.order }
+        var byName: [String: TemplateExercise] = [:]
+        for te in existingTemplateExercises { byName[te.name] = te }
+
+        var rebuilt: [TemplateExercise] = []
+        for (order, we) in workoutExercises.enumerated() {
+            let workingSets = we.workingSets
+            let setCount = max(workingSets.count, 1)
+            let topWeight = workingSets.map(\.weightKg).max() ?? 0
+            let reps = workingSets.compactMap { $0.actualReps ?? $0.targetReps }.first ?? 0
+            let symbol = byName[we.name]?.symbolName
+                ?? (existingTemplateExercises.first { $0.name == we.name }?.symbolName)
+                ?? "figure.strengthtraining.traditional"
+
+            if let existing = byName[we.name] {
+                existing.order = order
+                existing.category = we.category
+                existing.defaultSets = setCount
+                existing.defaultReps = reps
+                existing.defaultWeightKg = topWeight
+                rebuilt.append(existing)
+                byName.removeValue(forKey: we.name)
+            } else {
+                let new = TemplateExercise(
+                    name: we.name,
+                    category: we.category,
+                    order: order,
+                    defaultSets: setCount,
+                    defaultReps: reps,
+                    defaultWeightKg: topWeight,
+                    symbolName: symbol,
+                    template: template
+                )
+                modelContext.insert(new)
+                rebuilt.append(new)
+            }
+        }
+
+        // Drop template exercises no longer in the session.
+        for orphan in byName.values {
+            modelContext.delete(orphan)
+        }
+
+        template.exercises = rebuilt
+        try? modelContext.save()
+        finishOrDismiss()
+    }
+
+    private func handlePrimaryAction() {
+        if workout.workoutIsRunning {
+            completeWorkout()
+            withAnimation(WorkoutAnimation.summaryFade) { summaryDisplayMode = .fullscreen }
+        } else {
+            resumeIfCompleted()
+            startWorkoutTimer()
+        }
+    }
+
+    private func startWorkoutTimer() {
+        guard !workout.workoutIsRunning else { return }
+        workout.workoutTimerStartedAt = now
+        workout.workoutIsRunning = true
+        commit()
+    }
+
+    private func pauseWorkoutTimerAccumulating() {
+        if workout.workoutIsRunning, let startedAt = workout.workoutTimerStartedAt {
+            workout.workoutElapsedOffset += max(0, now.timeIntervalSince(startedAt))
+        }
+        workout.workoutTimerStartedAt = nil
+        workout.workoutIsRunning = false
+    }
+
+    private func completeWorkout() {
+        clearRest()
+        workout.restTargetSeconds = 0
+        pauseWorkoutTimerAccumulating()
+        workout.isCompleted = true
+        workout.dateEnded = now
+        ExercisePreferences.apply(from: workout, in: modelContext)
+        consumeDailyPlanIfMatching()
+        commit()
+    }
+
+    /// Once today's training is finished, the matching DailyPlan has fulfilled
+    /// its purpose. Drop it so tomorrow's session falls back to the template
+    /// defaults again.
+    private func consumeDailyPlanIfMatching() {
+        guard let templateName = workout.templateName, !templateName.isEmpty else { return }
+        guard let template = matchingTemplate(named: templateName) else { return }
+        guard let plan = DailyPlan.findTodayPlan(templateID: template.id, in: modelContext) else { return }
+        modelContext.delete(plan)
+    }
+
+    private func dismissSummaryAndFinish() {
+        summaryDisplayMode = nil
+        finishOrDismiss()
+    }
+
+    private func finishOrDismiss() {
+        if let onFinish { onFinish() } else { dismiss() }
+    }
+
+    // MARK: - Rest timer
+
+    private func startRest(for set: WorkoutSet) {
+        workout.restStartTime = now
+        workout.restSourceSetID = set.id
+        workout.restTargetSeconds = max(0, Int(set.restAfter))
+        workout.restElapsedOffset = 0
+        workout.restIsPaused = false
+        workout.restLastUpdatedAt = now
+        workout.restActualSeconds = nil
+        scheduleRestNotification(seconds: workout.restTargetSeconds)
+    }
+
+    private func clearRest() {
+        workout.restStartTime = nil
+        workout.restSourceSetID = nil
+        workout.restElapsedOffset = 0
+        workout.restIsPaused = false
+        workout.restLastUpdatedAt = now
+        workout.restActualSeconds = nil
+        cancelRestNotification()
+    }
+
+    private func finishRest(natural: Bool = false) {
+        let actualSeconds = Int(workout.restElapsed(at: now))
+        let targetSeconds = workout.restTargetSeconds
+        workout.restActualSeconds = actualSeconds
+
+        if let sourceSetID = workout.restSourceSetID, let sourceSet = findSet(id: sourceSetID) {
+            // Natural end: record configured target. Skipped: record elapsed seconds (capped at target).
+            sourceSet.recordedRestSeconds = natural ? targetSeconds : min(actualSeconds, targetSeconds)
+            // If rest duration was adjusted, propagate the new target to subsequent uncompleted sets
+            if Int(sourceSet.restAfter) != targetSeconds {
+                propagateRestAfter(from: sourceSet, seconds: targetSeconds)
+            }
+        }
+
+        clearRest()
+        try? modelContext.save()
+        Haptics.notify(.success)
+    }
+
+    private func findSet(id: UUID) -> WorkoutSet? {
+        workout.orderedExercises.flatMap(\.orderedSets).first { $0.id == id }
+    }
+
+    private func propagateRestAfter(from sourceSet: WorkoutSet, seconds: Int) {
+        guard let exercise = sourceSet.exercise else { return }
+        let sets = exercise.orderedSets
+        guard let idx = sets.firstIndex(where: { $0.id == sourceSet.id }) else { return }
+        for i in (idx + 1)..<sets.count where !sets[i].isCompleted {
+            sets[i].restAfter = TimeInterval(seconds)
+        }
+    }
+
+    private func adjustRest(delta: Int) {
+        workout.restTargetSeconds = max(0, workout.restTargetSeconds + delta)
+        workout.restLastUpdatedAt = now
+        if workout.restTargetSeconds == 0 {
+            finishRest()
+        } else {
+            scheduleRestNotification(seconds: workout.restRemainingSeconds(at: now))
+            try? modelContext.save()
+            Haptics.impact(.light)
+        }
+    }
+
+    private func handleRestTick() {
+        guard workout.hasActiveRest else {
+            lastVibrationSecond = nil
+            return
+        }
+
+        let remaining = workout.restRemainingSeconds(at: now)
+
+        if remaining == 0 {
+            AudioServicesPlaySystemSound(SystemSoundID(1007))
+            finishRest(natural: true)
+            lastVibrationSecond = nil
+            return
+        }
+
+        if (1...10).contains(remaining), lastVibrationSecond != remaining {
+            lastVibrationSecond = remaining
+            Haptics.impact(remaining <= 3 ? .heavy : .light)
+        }
+    }
+
+    private func handleScenePhaseChange(_ newPhase: ScenePhase) {
+        guard workout.hasActiveRest else { return }
+        switch newPhase {
+        case .background, .inactive:
+            persistRestSnapshot()
+        case .active:
+            restoreRestSnapshot()
+        @unknown default:
+            break
+        }
+    }
+
+    private func persistRestSnapshot() {
+        guard workout.hasActiveRest else { return }
+        if !workout.restIsPaused {
+            workout.restElapsedOffset = workout.restElapsed(at: now)
+            workout.restStartTime = now
+        }
+        workout.restLastUpdatedAt = now
+        try? modelContext.save()
+    }
+
+    private func restoreRestSnapshot() {
+        guard workout.hasActiveRest else { return }
+        // Sync now to real time since the Timer may not have fired yet
+        now = Date.now
+        if workout.restRemainingSeconds(at: now) <= 0 {
+            finishRest(natural: true)
+            return
+        }
+        workout.restLastUpdatedAt = now
+        try? modelContext.save()
+    }
+
+    // MARK: - Notifications
+
+    private func scheduleRestNotification(seconds: Int) {
+        let center = UNUserNotificationCenter.current()
+        center.removePendingNotificationRequests(withIdentifiers: [CurrentWorkoutLayout.restNotificationID])
+        guard seconds > 0 else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "休息结束"
+        content.body = "该开始下一组了"
+        content.sound = .default
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
+        let request = UNNotificationRequest(
+            identifier: CurrentWorkoutLayout.restNotificationID,
+            content: content,
+            trigger: trigger
+        )
+        center.add(request)
+    }
+
+    private func cancelRestNotification() {
+        UNUserNotificationCenter.current()
+            .removePendingNotificationRequests(withIdentifiers: [CurrentWorkoutLayout.restNotificationID])
+    }
+
+    // MARK: - Toast
 
     private func presentToast(_ message: String) {
         toastMessage = message
@@ -1089,41 +1074,77 @@ struct CurrentWorkoutView: View {
         }
     }
 
-    private func updateDefaultRest(for exercise: WorkoutExercise, seconds: Int, in workout: WorkoutSession) {
-        for set in exercise.workingSets {
-            set.restAfter = TimeInterval(seconds)
-        }
-        workout.updatedAt = now
-        try? modelContext.save()
+    // MARK: - History lookup
+
+    private func lastSetSummary(forExerciseNamed name: String) -> String? {
+        let descriptor = FetchDescriptor<WorkoutExercise>(predicate: #Predicate { $0.name == name })
+        guard let exercises = try? modelContext.fetch(descriptor) else { return nil }
+        let excludeID = workout.id
+        let mostRecent = exercises
+            .filter { $0.session?.id != excludeID }
+            .flatMap { $0.sets ?? [] }
+            .filter { $0.isCompleted && !$0.isWarmup && $0.weightKg > 0 }
+            .max { lhs, rhs in setSortDate(lhs) < setSortDate(rhs) }
+        guard let mostRecent else { return nil }
+
+        let reps = mostRecent.actualReps ?? mostRecent.targetReps ?? 0
+        let weightStr = mostRecent.weightKg.formattedWeight(unit: weightUnit)
+        let unit = weightUnit.displaySymbol.lowercased()
+        return "\(weightStr)\(unit) × \(reps)"
     }
 
-    private func provideImpactFeedback(style: UIImpactFeedbackGenerator.FeedbackStyle) {
-        UIImpactFeedbackGenerator(style: style).impactOccurred()
+    private func setSortDate(_ set: WorkoutSet) -> Date {
+        set.completedAt ?? set.exercise?.session?.dateStarted ?? .distantPast
     }
+}
 
-    private func provideNotificationFeedback(_ type: UINotificationFeedbackGenerator.FeedbackType) {
-        UINotificationFeedbackGenerator().notificationOccurred(type)
+// MARK: - Floating card style
+
+extension View {
+    fileprivate func floatingCardStyle(cornerRadius: CGFloat = 20) -> some View {
+        self
+            .background(AppTheme.bgCard)
+            .clipShape(RoundedRectangle(cornerRadius: cornerRadius, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: cornerRadius, style: .continuous)
+                    .stroke(Color.black.opacity(0.04), lineWidth: 1)
+            )
+            .shadow(color: Color.black.opacity(0.10), radius: 18, y: 10)
     }
+}
 
-    private func scheduleRestNotification(seconds: Int) {
-        let center = UNUserNotificationCenter.current()
-        center.removePendingNotificationRequests(withIdentifiers: ["rest-timer-complete"])
+// MARK: - ExerciseEditorCard
 
-        guard seconds > 0 else { return }
+private struct CardAppearance {
+    let strokeColor: Color
+    let strokeWidth: CGFloat
+    let shadowColor: Color
+    let shadowRadius: CGFloat
+    let shadowOffsetY: CGFloat
 
-        let content = UNMutableNotificationContent()
-        content.title = "休息结束"
-        content.body = "该开始下一组了"
-        content.sound = .default
+    static let dragging = CardAppearance(
+        strokeColor: AppTheme.orange.opacity(0.3),
+        strokeWidth: 2,
+        shadowColor: Color.black.opacity(0.15),
+        shadowRadius: 16,
+        shadowOffsetY: 6
+    )
 
-        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: TimeInterval(seconds), repeats: false)
-        let request = UNNotificationRequest(identifier: "rest-timer-complete", content: content, trigger: trigger)
-        center.add(request)
-    }
+    static let highlighted = CardAppearance(
+        strokeColor: AppTheme.orange.opacity(0.45),
+        strokeWidth: 1.5,
+        shadowColor: AppTheme.orange.opacity(0.18),
+        shadowRadius: 14,
+        shadowOffsetY: 6
+    )
 
-    private func cancelRestNotification() {
-        UNUserNotificationCenter.current().removePendingNotificationRequests(withIdentifiers: ["rest-timer-complete"])
-    }
+    static let normal = CardAppearance(
+        strokeColor: Color.black.opacity(0.04),
+        strokeWidth: 0.5,
+        shadowColor: Color.black.opacity(0.03),
+        shadowRadius: 8,
+        shadowOffsetY: 3
+    )
 }
 
 struct ExerciseEditorCard: View {
@@ -1157,6 +1178,10 @@ struct ExerciseEditorCard: View {
     var forceEditableRest: Bool = false
     var isCurrent: Bool = false
     var lastSummary: String? = nil
+    /// User-level saved bodyweight (from AppPreferences). When the exercise
+    /// hasn't been given an explicit bodyweight yet, tapping the pill applies
+    /// this value directly instead of prompting.
+    var savedBodyweightKg: Double? = nil
 
     @State private var isShowingEditRestSheet = false
     @State private var isShowingBodyweightSheet = false
@@ -1169,331 +1194,25 @@ struct ExerciseEditorCard: View {
 
     private var isHighlighted: Bool { isCollapsed && isCurrent }
 
-    private var strokeColor: Color {
-        if isDragging { return AppTheme.orange.opacity(0.3) }
-        if isHighlighted { return AppTheme.orange.opacity(0.45) }
-        return Color.black.opacity(0.04)
+    private var appearance: CardAppearance {
+        if isDragging { return .dragging }
+        if isHighlighted { return .highlighted }
+        return .normal
     }
 
-    private var strokeWidth: CGFloat {
-        if isDragging { return 2 }
-        if isHighlighted { return 1.5 }
-        return 0.5
-    }
-
-    private var shadowColor: Color {
-        if isDragging { return Color.black.opacity(0.15) }
-        if isHighlighted { return AppTheme.orange.opacity(0.18) }
-        return Color.black.opacity(0.03)
-    }
-
-    private var shadowRadius: CGFloat {
-        if isDragging { return 16 }
-        if isHighlighted { return 14 }
-        return 8
-    }
-
-    private var shadowOffsetY: CGFloat {
-        if isDragging { return 6 }
-        if isHighlighted { return 6 }
-        return 3
+    private func toggleCollapsed() {
+        withAnimation(WorkoutAnimation.cardCollapse) {
+            isCollapsed.toggle()
+        }
     }
 
     var body: some View {
-                                                                                                                                                                                                                                                                                                                                                                                                        VStack(alignment: .leading, spacing: isCollapsed ? 8 : 14) {
-                                                                                                                                                                                                                                                                                                                                                                                                            // Header: name + (current badge) + action buttons
-                                                                                                                                                                                                                                                                                                                                                                                                            HStack(alignment: .center, spacing: 8) {
-                                                                                                                                                                                                                                                                                                                                                                                                                HStack(spacing: 10) {
-                                                                                                                                                                                                                                                                                                                                                                                                                    Text(exercise.name)
-                                                                                                                                                                                                                                                                                                                                                                                                                        .font(.system(size: 16, weight: .bold))
-                                                                                                                                                                                                                                                                                                                                                                                                                        .kerning(-0.2)
-                                                                                                                                                                                                                                                                                                                                                                                                                        .foregroundStyle(AppTheme.fg1)
-                                                                                                                                                                                                                                                                                                                                                                                                                        .lineLimit(1)
-                                                                                                                                                                                                                                                                                                                                                                                                                        .minimumScaleFactor(0.8)
-
-                                                                                                                                                                                                                                                                                                                                                                                                                    if isCurrent {
-                                                                                                                                                                                                                                                                                                                                                                                                                        Text("当前")
-                                                                                                                                                                                                                                                                                                                                                                                                                            .font(.system(size: 12, weight: .bold))
-                                                                                                                                                                                                                                                                                                                                                                                                                            .foregroundStyle(AppTheme.orange)
-                                                                                                                                                                                                                                                                                                                                                                                                                            .padding(.horizontal, 9)
-                                                                                                                                                                                                                                                                                                                                                                                                                            .padding(.vertical, 4)
-                                                                                                                                                                                                                                                                                                                                                                                                                            .background(AppTheme.orange.opacity(0.15))
-                                                                                                                                                                                                                                                                                                                                                                                                                            .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
-                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                }
-                                                                                                                                                                                                                                                                                                                                                                                                                .frame(maxWidth: .infinity, alignment: .leading)
-                                                                                                                                                                                                                                                                                                                                                                                                                .contentShape(Rectangle())
-                                                                                                                                                                                                                                                                                                                                                                                                                .onTapGesture {
-                                                                                                                                                                                                                                                                                                                                                                                                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                                                                                                                                                                                                                                                                                                                                                                                                                        isCollapsed.toggle()
-                                                                                                                                                                                                                                                                                                                                                                                                                    }
-                                                                                                                                                                                                                                                                                                                                                                                                                }
-
-                // 更多菜单
-                Menu {
-                    Button(action: { isShowingEditRestSheet = true }) {
-                        Label("修改计时", systemImage: "timer")
-                    }
-                    Button(action: onReplaceExercise) {
-                        Label("替换动作", systemImage: "arrow.2.squarepath")
-                    }
-                    Button(role: .destructive, action: onDelete) {
-                        Label("删除", systemImage: "trash")
-                    }
-                } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(AppTheme.fg2)
-                        .frame(width: 32, height: 32)
-                }
-            }
-
-            // Progress row — tap to collapse / expand
-            if !isCollapsed || lastSummary != nil {
-            Button(action: {
-                withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                    isCollapsed.toggle()
-                }
-            }) {
-                HStack(alignment: .center, spacing: 8) {
-
-
-                    if isCollapsed {
-                        EmptyView()
-                    } else {
-                        // 自重按钮
-                        Button(action: {
-                            if exercise.bodyweightKg == nil {
-                                isShowingBodyweightSheet = true
-                            } else {
-                                onToggleBodyweight()
-                            }
-                        }) {
-                            let isActive = exercise.includesBodyweight && exercise.bodyweightKg != nil
-                            HStack(spacing: 3) {
-                                Image(systemName: "figure.stand")
-                                    .font(.system(size: 11))
-                                Text("自重")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundStyle(isActive ? .white : AppTheme.fg2)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .simultaneousGesture(
-                            LongPressGesture(minimumDuration: 0.45)
-                                .onEnded { _ in
-                                    isShowingBodyweightSheet = true
-                                }
-                        )
-                        .animation(.easeInOut(duration: 0.2), value: exercise.includesBodyweight)
-
-                        // 单边模式切换按钮
-                        Button(action: onToggleWeightMode) {
-                            let isActive = exercise.weightMode == .singleHand
-                            HStack(spacing: 3) {
-                                Image(systemName: "hand.raised.fill")
-                                    .font(.system(size: 11))
-                                Text("单边")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundStyle(isActive ? .white : AppTheme.fg2)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-                        .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
-
-                        // 热身组按钮
-                        Button(action: onAddWarmupSet) {
-                            HStack(spacing: 3) {
-                                Image(systemName: "flame.fill")
-                                    .font(.system(size: 11))
-                                Text("热身")
-                                    .font(.system(size: 11, weight: .semibold))
-                            }
-                            .foregroundStyle(AppTheme.fg2)
-                            .padding(.horizontal, 9)
-                            .padding(.vertical, 5)
-                            .background(AppTheme.fillSubtle)
-                            .clipShape(Capsule())
-                            .overlay(
-                                Capsule().stroke(AppTheme.fg4, lineWidth: 1)
-                            )
-                        }
-                        .buttonStyle(.plain)
-
-                    }
-
-                }
-                .frame(height: isCollapsed ? 16 : 26)
-            }
-            .buttonStyle(.plain)
-            }
-
-            if isCollapsed {
-                HStack(spacing: 5) {
-                    ForEach(exercise.orderedSets) { set in
-                        if set.isWarmup {
-                            Text("w")
-                                .font(.system(size: 9, weight: .bold, design: .rounded))
-                                .foregroundStyle(set.isCompleted ? AppTheme.orange : AppTheme.fg4)
-                                .frame(width: 7, height: 7)
-                        } else if set.isCompleted {
-                            Circle()
-                                .fill(AppTheme.orange)
-                                .frame(width: 7, height: 7)
-                        } else {
-                            Circle()
-                                .fill(AppTheme.fg4.opacity(0.4))
-                                .frame(width: 7, height: 7)
-                        }
-                    }
-                }
-                .padding(.top, -4)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                        isCollapsed.toggle()
-                    }
-                }
-            }
-
-            if !isCollapsed {
-                VStack(spacing: 10) {
-                    HStack(spacing: 0) {
-                        HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                            Text("组")
-                                .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                            HStack(spacing: 2) {
-                                Text(weightColumnTitle)
-                                if exercise.weightMode == .singleHand {
-                                    Text("×2")
-                                        .foregroundStyle(AppTheme.orange)
-                                }
-                            }
-                            .frame(width: WorkoutCardLayout.weightCellWidth, alignment: .center)
-                            Text("次数")
-                                .frame(width: WorkoutCardLayout.repsCellWidth, alignment: .center)
-                            Text("休息")
-                                .frame(width: WorkoutCardLayout.restCellWidth, alignment: .center)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Text("状态")
-                            .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
-                    }
-                    .font(.system(size: 10, weight: .medium))
-                    .foregroundStyle(AppTheme.fg3)
-                    .textCase(.uppercase)
-
-                    let workingSetIDs = exercise.workingSets.map(\.id)
-                    ForEach(exercise.orderedSets) { item in
-                        VStack(spacing: 0) {
-                            WorkoutSetRow(
-                                set: item,
-                                displayIndex: item.isWarmup ? 0 : ((workingSetIDs.firstIndex(of: item.id) ?? -1) + 1),
-                                weightUnit: weightUnit,
-                                weightMode: exercise.weightMode,
-                                canDelete: exercise.orderedSets.count > 1,
-                                isRestActive: isRestActive,
-                                restSourceSetID: restSourceSetID,
-                                onToggle: {
-                                    let wasCompleted = item.isCompleted
-                                    onToggleSet(item)
-                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                                        if !wasCompleted && !item.isWarmup {
-                                            rpeTrayExpandedSetID = item.id
-                                        } else {
-                                            rpeTrayExpandedSetID = nil
-                                        }
-                                    }
-                                },
-                                onUpdateWeight: { value in onUpdateWeight(item, value) },
-                                onUpdateReps: { value in onUpdateReps(item, value) },
-                                onUpdateRest: { value in onUpdateRest(item, value) },
-                                onBeginEditing: {
-                                    onBeginEditingSet(item)
-                                    if rpeTrayExpandedSetID != nil {
-                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                                            rpeTrayExpandedSetID = nil
-                                        }
-                                    }
-                                },
-                                onCopyRight: { onCopyWeightRight(item) },
-                                onCopyDown: { onCopyWeightDown(item) },
-                                onCopyRepsDown: { onCopyRepsDown(item) },
-                                onToggleSetType: { onToggleSetType(item) },
-                                onDeleteSet: { onDeleteSet(item) },
-                                onRequestRPEEdit: {
-                                    withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                                        rpeTrayExpandedSetID = (rpeTrayExpandedSetID == item.id) ? nil : item.id
-                                    }
-                                },
-                                forceEditableRest: forceEditableRest
-                            )
-
-                            if rpeTrayExpandedSetID == item.id && !item.isWarmup {
-                                RPEInlineTray(
-                                    currentValue: item.rpe,
-                                    onSelect: { value in
-                                        onUpdateRPE(item, value)
-                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                                            rpeTrayExpandedSetID = nil
-                                        }
-                                    },
-                                    onDismiss: {
-                                        withAnimation(.spring(response: 0.32, dampingFraction: 0.82)) {
-                                            rpeTrayExpandedSetID = nil
-                                        }
-                                    }
-                                )
-                                .transition(.asymmetric(
-                                    insertion: .opacity.combined(with: .offset(y: -6)),
-                                    removal: .opacity.combined(with: .offset(y: -6))
-                                ))
-                            }
-                        }
-                    }
-                }
-
-                Button(action: onAddSet) {
-                    HStack(spacing: 0) {
-                        HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                            Text("\(exercise.workingSets.count + 1)")
-                                .font(.system(size: 13, weight: .regular))
-                                .foregroundStyle(AppTheme.fg3)
-                                .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-
-                            AddPlaceholderCell(width: WorkoutCardLayout.weightCellWidth)
-                            AddPlaceholderCell(width: WorkoutCardLayout.repsCellWidth)
-                            AddPlaceholderCell(width: WorkoutCardLayout.restCellWidth)
-                        }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                        Circle()
-                            .stroke(AppTheme.fg4, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
-                            .frame(width: 26, height: 26)
-                            .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
-                    }
-                }
-                .buttonStyle(.plain)
-                .transition(.asymmetric(
-                    insertion: .opacity.combined(with: .offset(y: -8)),
-                    removal: .opacity.combined(with: .offset(y: -8))
-                ))
-            }
+        let style = appearance
+        return VStack(alignment: .leading, spacing: isCollapsed ? 8 : 14) {
+            headerRow
+            actionRow
+            if isCollapsed { collapsedDots }
+            if !isCollapsed { expandedSetsSection }
         }
         .padding(.leading, 16)
         .padding(.trailing, 12)
@@ -1501,16 +1220,14 @@ struct ExerciseEditorCard: View {
         .background(AppTheme.bgCard)
         .contentShape(Rectangle())
         .onTapGesture {
-            withAnimation(.spring(response: 0.32, dampingFraction: 0.78)) {
-                isCollapsed.toggle()
-            }
+            if isCollapsed { toggleCollapsed() }
         }
         .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .overlay(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
-                .stroke(strokeColor, lineWidth: strokeWidth)
+                .stroke(style.strokeColor, lineWidth: style.strokeWidth)
         )
-        .shadow(color: shadowColor, radius: shadowRadius, y: shadowOffsetY)
+        .shadow(color: style.shadowColor, radius: style.shadowRadius, y: style.shadowOffsetY)
         .scaleEffect(isDragging ? 1.02 : 1.0)
         .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isDragging)
         .sheet(isPresented: $isShowingEditRestSheet) {
@@ -1522,45 +1239,292 @@ struct ExerciseEditorCard: View {
         .sheet(isPresented: $isShowingBodyweightSheet) {
             BodyweightInputSheet(
                 currentKg: exercise.bodyweightKg,
-                onConfirm: { kg in onUpdateBodyweight(kg) }
+                onConfirm: onUpdateBodyweight
             )
         }
     }
 
-    private var symbolName: String {
-        switch exercise.category {
-        case "胸部":
-            return "flame.fill"
-        case "腿部":
-            return "figure.strengthtraining.traditional"
-        case "背部":
-            return "figure.pull.up"
-        case "肩部":
-            return "triangle.fill"
-        case "手臂":
-            return "bolt.fill"
-        default:
-            return "figure.mixed.cardio"
+    // MARK: - Header
+
+    private var headerRow: some View {
+        HStack(alignment: .center, spacing: 8) {
+            HStack(spacing: 10) {
+                Text(exercise.name)
+                    .font(.system(size: 16, weight: .bold))
+                    .kerning(-0.2)
+                    .foregroundStyle(AppTheme.fg1)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+
+                if isCurrent {
+                    Text("当前")
+                        .font(.system(size: 12, weight: .bold))
+                        .foregroundStyle(AppTheme.orange)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 4)
+                        .background(AppTheme.orange.opacity(0.15))
+                        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .contentShape(Rectangle())
+            .onTapGesture { toggleCollapsed() }
+
+            Menu {
+                Button(action: { isShowingEditRestSheet = true }) {
+                    Label("修改计时", systemImage: "timer")
+                }
+                Button(action: onReplaceExercise) {
+                    Label("替换动作", systemImage: "arrow.2.squarepath")
+                }
+                Button(role: .destructive, action: onDelete) {
+                    Label("删除", systemImage: "trash")
+                }
+            } label: {
+                Image(systemName: "ellipsis")
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundStyle(AppTheme.fg2)
+                    .frame(width: 32, height: 32)
+            }
         }
     }
 
-    private var accentColor: Color {
-        switch exercise.category {
-        case "胸部":
-            return AppTheme.orange
-        case "腿部":
-            return AppTheme.fg2
-        case "背部":
-            return AppTheme.confirm
-        case "肩部":
-            return AppTheme.fg3
-        case "手臂":
-            return AppTheme.fg3
-        default:
-            return AppTheme.fg2
+    // MARK: - Action row (pill buttons)
+
+    @ViewBuilder
+    private var actionRow: some View {
+        if !isCollapsed || lastSummary != nil {
+            HStack(alignment: .center, spacing: 8) {
+                if !isCollapsed {
+                    bodyweightPill
+                    weightModePill
+                    warmupPill
+                }
+            }
+            .frame(height: isCollapsed ? 16 : 26)
         }
     }
+
+    private var bodyweightPill: some View {
+        let isActive = exercise.includesBodyweight && exercise.bodyweightKg != nil
+        return PillToggleButton(
+            icon: "figure.stand",
+            title: "自重",
+            isActive: isActive,
+            action: {
+                if exercise.bodyweightKg == nil {
+                    if let saved = savedBodyweightKg, saved > 0 {
+                        onUpdateBodyweight(saved)
+                    } else {
+                        isShowingBodyweightSheet = true
+                    }
+                } else {
+                    onToggleBodyweight()
+                }
+            }
+        )
+        .simultaneousGesture(
+            LongPressGesture(minimumDuration: 0.45).onEnded { _ in
+                isShowingBodyweightSheet = true
+            }
+        )
+        .animation(.easeInOut(duration: 0.2), value: exercise.includesBodyweight)
+    }
+
+    private var weightModePill: some View {
+        PillToggleButton(
+            icon: "hand.raised.fill",
+            title: "单边",
+            isActive: exercise.weightMode == .singleHand,
+            action: onToggleWeightMode
+        )
+        .animation(.easeInOut(duration: 0.2), value: exercise.weightMode)
+    }
+
+    private var warmupPill: some View {
+        PillToggleButton(
+            icon: "flame.fill",
+            title: "热身",
+            isActive: false,
+            action: onAddWarmupSet
+        )
+    }
+
+    // MARK: - Collapsed dots row
+
+    private var collapsedDots: some View {
+        HStack(spacing: 5) {
+            ForEach(exercise.orderedSets) { set in
+                if set.isWarmup {
+                    Text("w")
+                        .font(.system(size: 9, weight: .bold, design: .rounded))
+                        .foregroundStyle(set.isCompleted ? AppTheme.orange : AppTheme.fg4)
+                        .frame(width: 7, height: 7)
+                } else {
+                    Circle()
+                        .fill(set.isCompleted ? AppTheme.orange : AppTheme.fg4.opacity(0.4))
+                        .frame(width: 7, height: 7)
+                }
+            }
+        }
+        .padding(.top, -4)
+        .contentShape(Rectangle())
+        .onTapGesture { toggleCollapsed() }
+    }
+
+    // MARK: - Expanded sets section
+
+    private var expandedSetsSection: some View {
+        VStack(spacing: 10) {
+            VStack(spacing: 10) {
+                columnHeaderRow
+                setRows
+            }
+            addSetButton
+        }
+    }
+
+    private var columnHeaderRow: some View {
+        HStack(spacing: 0) {
+            HStack(spacing: WorkoutCardLayout.columnSpacing) {
+                Text("组").frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+
+                HStack(spacing: 2) {
+                    Text(weightColumnTitle)
+                    if exercise.weightMode == .singleHand {
+                        Text("×2").foregroundStyle(AppTheme.orange)
+                    }
+                }
+                .frame(width: WorkoutCardLayout.weightCellWidth, alignment: .center)
+
+                Text("次数").frame(width: WorkoutCardLayout.repsCellWidth, alignment: .center)
+                Text("休息").frame(width: WorkoutCardLayout.restCellWidth, alignment: .center)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text("状态").frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
+        }
+        .font(.system(size: 10, weight: .medium))
+        .foregroundStyle(AppTheme.fg3)
+        .textCase(.uppercase)
+    }
+
+    private var setRows: some View {
+        let workingSetIDs = exercise.workingSets.map(\.id)
+        return ForEach(exercise.orderedSets) { item in
+            VStack(spacing: 0) {
+                WorkoutSetRow(
+                    set: item,
+                    displayIndex: item.isWarmup ? 0 : ((workingSetIDs.firstIndex(of: item.id) ?? -1) + 1),
+                    weightUnit: weightUnit,
+                    weightMode: exercise.weightMode,
+                    canDelete: exercise.orderedSets.count > 1,
+                    isRestActive: isRestActive,
+                    restSourceSetID: restSourceSetID,
+                    onToggle: {
+                        let wasCompleted = item.isCompleted
+                        onToggleSet(item)
+                        setTray(to: (!wasCompleted && !item.isWarmup) ? item.id : nil)
+                    },
+                    onUpdateWeight: { onUpdateWeight(item, $0) },
+                    onUpdateReps: { onUpdateReps(item, $0) },
+                    onUpdateRest: { onUpdateRest(item, $0) },
+                    onBeginEditing: {
+                        onBeginEditingSet(item)
+                        if rpeTrayExpandedSetID != nil { setTray(to: nil) }
+                    },
+                    onCopyRight: { onCopyWeightRight(item) },
+                    onCopyDown: { onCopyWeightDown(item) },
+                    onCopyRepsDown: { onCopyRepsDown(item) },
+                    onToggleSetType: { onToggleSetType(item) },
+                    onDeleteSet: { onDeleteSet(item) },
+                    onRequestRPEEdit: {
+                        setTray(to: rpeTrayExpandedSetID == item.id ? nil : item.id)
+                    },
+                    forceEditableRest: forceEditableRest
+                )
+
+                if rpeTrayExpandedSetID == item.id && !item.isWarmup {
+                    RPEInlineTray(
+                        currentValue: item.rpe,
+                        onSelect: { value in
+                            onUpdateRPE(item, value)
+                            setTray(to: nil)
+                        },
+                        onDismiss: { setTray(to: nil) }
+                    )
+                    .transition(.asymmetric(
+                        insertion: .opacity.combined(with: .offset(y: -6)),
+                        removal: .opacity.combined(with: .offset(y: -6))
+                    ))
+                }
+            }
+        }
+    }
+
+    private func setTray(to id: UUID?) {
+        withAnimation(WorkoutAnimation.trayToggle) {
+            rpeTrayExpandedSetID = id
+        }
+    }
+
+    private var addSetButton: some View {
+        Button(action: onAddSet) {
+            HStack(spacing: 0) {
+                HStack(spacing: WorkoutCardLayout.columnSpacing) {
+                    Text("\(exercise.workingSets.count + 1)")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(AppTheme.fg3)
+                        .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+
+                    AddPlaceholderCell(width: WorkoutCardLayout.weightCellWidth)
+                    AddPlaceholderCell(width: WorkoutCardLayout.repsCellWidth)
+                    AddPlaceholderCell(width: WorkoutCardLayout.restCellWidth)
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                Circle()
+                    .stroke(AppTheme.fg4, style: StrokeStyle(lineWidth: 1.5, dash: [3, 3]))
+                    .frame(width: 26, height: 26)
+                    .frame(width: WorkoutCardLayout.statusWidth, alignment: .center)
+            }
+        }
+        .buttonStyle(.plain)
+        .transition(.asymmetric(
+            insertion: .opacity.combined(with: .offset(y: -8)),
+            removal: .opacity.combined(with: .offset(y: -8))
+        ))
+    }
 }
+
+// MARK: - Pill toggle button
+
+private struct PillToggleButton: View {
+    let icon: String
+    let title: String
+    let isActive: Bool
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 3) {
+                Image(systemName: icon).font(.system(size: 11))
+                Text(title).font(.system(size: 11, weight: .semibold))
+            }
+            .foregroundStyle(isActive ? .white : AppTheme.fg2)
+            .padding(.horizontal, 9)
+            .padding(.vertical, 5)
+            .background(isActive ? AppTheme.orange : AppTheme.fillSubtle)
+            .clipShape(Capsule())
+            .overlay(
+                Capsule().stroke(isActive ? Color.clear : AppTheme.fg4, lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - WorkoutSetRow
 
 struct WorkoutSetRow: View {
     let set: WorkoutSet
@@ -1587,7 +1551,7 @@ struct WorkoutSetRow: View {
     @Environment(\.showToast) private var showToast
 
     private var weightDisplayValue: String {
-        return set.weightKg.formattedWeight(unit: weightUnit, fractionDigits: 2)
+        self.set.weightKg.formattedWeight(unit: weightUnit, fractionDigits: 2)
     }
 
     private var indexLabel: String {
@@ -1616,136 +1580,159 @@ struct WorkoutSetRow: View {
     var body: some View {
         HStack(spacing: 0) {
             HStack(spacing: WorkoutCardLayout.columnSpacing) {
-                Menu {
-                    Button(action: onToggleSetType) {
-                        Label(
-                            set.isWarmup ? "切换为正式组" : "切换为热身组",
-                            systemImage: set.isWarmup ? "flame" : "flame.fill"
-                        )
-                    }
-                    if canDelete {
-                        Button(role: .destructive, action: { onDeleteSet?() }) {
-                            Label("删除此组", systemImage: "trash")
-                        }
-                    }
-                } label: {
-                    Text(indexLabel)
-                        .font(.system(size: 14, weight: set.isWarmup ? .bold : .regular))
-                        .foregroundStyle(indexColor)
-                        .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                EditableInputCell(
-                    value: weightDisplayValue,
-                    valueKind: .weight,
-                    keyboardType: .decimalPad,
-                    width: WorkoutCardLayout.weightCellWidth,
-                    isEditable: true,
-                    activeTextColor: AppTheme.fg1,
-                    inactiveTextColor: AppTheme.fg1,
-                    onBeginEditing: onBeginEditing,
-                    onCommit: onUpdateWeight,
-                    onCopyRight: onCopyRight,
-                    onCopyDown: onCopyDown
-                )
-                EditableInputCell(
-                    value: set.repsDisplay,
-                    valueKind: .reps,
-                    keyboardType: .numberPad,
-                    width: WorkoutCardLayout.repsCellWidth,
-                    isEditable: true,
-                    activeTextColor: AppTheme.fg1,
-                    inactiveTextColor: AppTheme.fg1,
-                    onBeginEditing: onBeginEditing,
-                    onCommit: onUpdateReps,
-                    onCopyDown: onCopyRepsDown
-                )
-
-                let isRestSource = isRestActive && set.id == restSourceSetID
-                let restEditable = forceEditableRest || restIsLongPressEditable
-                let restLocked = set.canEditRecordedRest && !restEditable
-
-                ZStack {
-                    EditableInputCell(
-                        value: restEditable
-                            ? (set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))")
-                            : (isRestSource ? "..." : set.completedRestDisplay),
-                        valueKind: .rest,
-                        keyboardType: .numberPad,
-                        width: WorkoutCardLayout.restCellWidth,
-                        isEditable: restEditable,
-                        activeTextColor: AppTheme.orange,
-                        inactiveTextColor: isRestSource ? AppTheme.orange : AppTheme.fg3,
-                        onBeginEditing: onBeginEditing,
-                        onCommit: onUpdateRest,
-                        onEndEditing: {
-                            restIsLongPressEditable = false
-                        }
-                    )
-                    if restLocked {
-                        Color.clear
-                            .frame(width: WorkoutCardLayout.restCellWidth, height: 36)
-                            .contentShape(Rectangle())
-                            .onTapGesture {
-                                showToast("长按修改休息时间")
-                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                            }
-                            .simultaneousGesture(LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                                restIsLongPressEditable = true
-                                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                            })
-                    }
-                }
+                indexMenu
+                weightCell
+                repsCell
+                restCell
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // Status circle — tap to complete; tap completed opens RPE tray (or toast for warmup); long press cancels
-            Circle()
-                .fill(statusCircleFill)
-                .background(
-                    Circle()
-                        .stroke(set.isCompleted ? Color.clear : AppTheme.fg3, lineWidth: 2)
-                )
-                .overlay {
-                    if set.isCompleted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 13, weight: .regular))
-                            .foregroundStyle(.white)
-                    }
-                }
-                .frame(width: 28, height: 28)
-                .frame(width: WorkoutCardLayout.statusWidth, height: 40)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    guard !isToggleLocked else { return }
-                    if set.isCompleted {
-                        if set.isWarmup {
-                            showToast("长按取消完成状态")
-                        } else {
-                            onRequestRPEEdit()
-                        }
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                    } else {
-                        onToggle()
-                    }
-                }
-                .simultaneousGesture(
-                    LongPressGesture(minimumDuration: 0.5).onEnded { _ in
-                        guard set.isCompleted, !isToggleLocked else { return }
-                        onToggle()
-                        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-                    }
-                )
-                .opacity(isToggleLocked ? 0.3 : 1.0)
+            statusCircle
         }
         .padding(.vertical, set.isWarmup ? 2 : 0)
         .background(Color.clear)
         .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         .id(set.id)
     }
+
+    private var indexMenu: some View {
+        Menu {
+            Button(action: onToggleSetType) {
+                Label(
+                    set.isWarmup ? "切换为正式组" : "切换为热身组",
+                    systemImage: set.isWarmup ? "flame" : "flame.fill"
+                )
+            }
+            if canDelete {
+                Button(role: .destructive, action: { onDeleteSet?() }) {
+                    Label("删除此组", systemImage: "trash")
+                }
+            }
+        } label: {
+            Text(indexLabel)
+                .font(.system(size: 14, weight: set.isWarmup ? .bold : .regular))
+                .foregroundStyle(indexColor)
+                .frame(width: WorkoutCardLayout.setIndexWidth, alignment: .center)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var weightCell: some View {
+        EditableInputCell(
+            value: weightDisplayValue,
+            valueKind: .weight,
+            keyboardType: .decimalPad,
+            width: WorkoutCardLayout.weightCellWidth,
+            isEditable: true,
+            activeTextColor: AppTheme.fg1,
+            inactiveTextColor: AppTheme.fg1,
+            onBeginEditing: onBeginEditing,
+            onCommit: onUpdateWeight,
+            onCopyRight: onCopyRight,
+            onCopyDown: onCopyDown
+        )
+    }
+
+    private var repsCell: some View {
+        EditableInputCell(
+            value: set.repsDisplay,
+            valueKind: .reps,
+            keyboardType: .numberPad,
+            width: WorkoutCardLayout.repsCellWidth,
+            isEditable: true,
+            activeTextColor: AppTheme.fg1,
+            inactiveTextColor: AppTheme.fg1,
+            onBeginEditing: onBeginEditing,
+            onCommit: onUpdateReps,
+            onCopyDown: onCopyRepsDown
+        )
+    }
+
+    private var restCell: some View {
+        let isRestSource = isRestActive && set.id == restSourceSetID
+        let restEditable = forceEditableRest || restIsLongPressEditable
+        let restLocked = set.canEditRecordedRest && !restEditable
+        let restValue: String
+        if restEditable {
+            restValue = set.recordedRestSeconds.map { "\($0)" } ?? "\(Int(set.restAfter))"
+        } else {
+            restValue = isRestSource ? "..." : set.completedRestDisplay
+        }
+
+        return ZStack {
+            EditableInputCell(
+                value: restValue,
+                valueKind: .rest,
+                keyboardType: .numberPad,
+                width: WorkoutCardLayout.restCellWidth,
+                isEditable: restEditable,
+                activeTextColor: AppTheme.orange,
+                inactiveTextColor: isRestSource ? AppTheme.orange : AppTheme.fg3,
+                onBeginEditing: onBeginEditing,
+                onCommit: onUpdateRest,
+                onEndEditing: { restIsLongPressEditable = false }
+            )
+            if restLocked {
+                Color.clear
+                    .frame(width: WorkoutCardLayout.restCellWidth, height: 36)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        showToast("长按修改休息时间")
+                        Haptics.impact(.light)
+                    }
+                    .simultaneousGesture(
+                        LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                            restIsLongPressEditable = true
+                            Haptics.impact(.medium)
+                        }
+                    )
+            }
+        }
+    }
+
+    // Status circle — tap to complete; tap completed opens RPE tray (or toast for warmup); long press cancels
+    private var statusCircle: some View {
+        Circle()
+            .fill(statusCircleFill)
+            .background(
+                Circle().stroke(set.isCompleted ? Color.clear : AppTheme.fg3, lineWidth: 2)
+            )
+            .overlay {
+                if set.isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 13, weight: .regular))
+                        .foregroundStyle(.white)
+                }
+            }
+            .frame(width: 28, height: 28)
+            .frame(width: WorkoutCardLayout.statusWidth, height: 40)
+            .contentShape(Rectangle())
+            .onTapGesture {
+                guard !isToggleLocked else { return }
+                if set.isCompleted {
+                    if set.isWarmup {
+                        showToast("长按取消完成状态")
+                    } else {
+                        onRequestRPEEdit()
+                    }
+                    Haptics.impact(.light)
+                } else {
+                    onToggle()
+                }
+            }
+            .simultaneousGesture(
+                LongPressGesture(minimumDuration: 0.5).onEnded { _ in
+                    guard set.isCompleted, !isToggleLocked else { return }
+                    onToggle()
+                    Haptics.impact(.medium)
+                }
+            )
+            .opacity(isToggleLocked ? 0.3 : 1.0)
+    }
 }
+
+// MARK: - RPE tray
 
 struct RPEInlineTray: View {
     let currentValue: Int?
@@ -1768,14 +1755,14 @@ struct RPEInlineTray: View {
                     isSelected: currentValue == value,
                     onTap: {
                         onSelect(value)
-                        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                        Haptics.impact(.light)
                     }
                 )
             }
 
             Button(action: {
                 onDismiss()
-                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                Haptics.impact(.light)
             }) {
                 Image(systemName: "xmark")
                     .font(.system(size: 10, weight: .bold))
@@ -1816,6 +1803,8 @@ private struct RPEButton: View {
     }
 }
 
+// MARK: - Input sanitation
+
 private enum InputValueKind {
     case weight
     case reps
@@ -1831,17 +1820,17 @@ private enum InputValueSanitizer {
 
     static func sanitize(_ text: String, kind: InputValueKind) -> String {
         switch kind {
-        case .weight:
-            return sanitizeWeight(text)
-        case .reps, .rest:
-            return sanitizeInteger(text)
+        case .weight: return sanitizeWeight(text)
+        case .reps, .rest: return sanitizeInteger(text)
         }
     }
 
     static func parseWeight(_ text: String) -> Double? {
         let sanitized = sanitizeWeight(text)
         let normalized = sanitized.hasSuffix(".") ? String(sanitized.dropLast()) : sanitized
-        guard !normalized.isEmpty, let value = Double(normalized), value >= 0, value <= maxWeightValue else {
+        guard !normalized.isEmpty,
+              let value = Double(normalized),
+              value >= 0, value <= maxWeightValue else {
             return nil
         }
         return value
@@ -1849,14 +1838,18 @@ private enum InputValueSanitizer {
 
     static func parseInteger(_ text: String) -> Int? {
         let sanitized = sanitizeInteger(text)
-        guard !sanitized.isEmpty, let value = Int(sanitized), value >= 0, value <= maxIntegerValue else {
+        guard !sanitized.isEmpty,
+              let value = Int(sanitized),
+              value >= 0, value <= maxIntegerValue else {
             return nil
         }
         return value
     }
 
     private static func sanitizeWeight(_ text: String) -> String {
-        let normalized = text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: ",", with: ".")
+        let normalized = text
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+            .replacingOccurrences(of: ",", with: ".")
         var integerPart = ""
         var fractionPart = ""
         var hasDot = false
@@ -1887,6 +1880,8 @@ private enum InputValueSanitizer {
     }
 }
 
+// MARK: - Editable input cell
+
 private struct EditableInputCell: View {
     let value: String
     let valueKind: InputValueKind
@@ -1914,10 +1909,10 @@ private struct EditableInputCell: View {
             onCopyRight: onCopyRight,
             onCopyDown: onCopyDown
         )
-            .frame(width: width)
-            .frame(height: 36)
-            .background(AppTheme.fillSubtle)
-            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+        .frame(width: width)
+        .frame(height: 36)
+        .background(AppTheme.fillSubtle)
+        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
     }
 }
 
@@ -1934,7 +1929,12 @@ private struct SelectAllTextField: UIViewRepresentable {
     var onCopyDown: (() -> Void)?
 
     func makeCoordinator() -> Coordinator {
-        Coordinator(onBeginEditing: onBeginEditing, onCommit: onCommit, onEndEditing: onEndEditing, valueKind: valueKind)
+        Coordinator(
+            onBeginEditing: onBeginEditing,
+            onCommit: onCommit,
+            onEndEditing: onEndEditing,
+            valueKind: valueKind
+        )
     }
 
     func makeUIView(context: Context) -> HiddenCaretTextField {
@@ -1946,7 +1946,11 @@ private struct SelectAllTextField: UIViewRepresentable {
         textField.font = .systemFont(ofSize: WorkoutCardLayout.inputFontSize, weight: .regular)
         textField.adjustsFontSizeToFitWidth = false
         textField.keyboardType = keyboardType
-        textField.addTarget(context.coordinator, action: #selector(Coordinator.textDidChange(_:)), for: .editingChanged)
+        textField.addTarget(
+            context.coordinator,
+            action: #selector(Coordinator.textDidChange(_:)),
+            for: .editingChanged
+        )
 
         let keyboard = NumericKeyboardInputView(frame: CGRect(x: 0, y: 0, width: 0, height: 224))
         keyboard.targetTextField = textField
@@ -1982,7 +1986,7 @@ private struct SelectAllTextField: UIViewRepresentable {
         if let keyboard = context.coordinator.keyboard {
             keyboard.onCopyRight = onCopyRight
             // Commit the current typed value first so the latest input is used when copying down
-            if let onCopyDown = onCopyDown {
+            if let onCopyDown {
                 keyboard.onCopyDown = { [weak textField] in
                     if let tf = textField {
                         context.coordinator.commit(tf)
@@ -2004,7 +2008,12 @@ private struct SelectAllTextField: UIViewRepresentable {
         var suppressNextCommit = false
         var originalValue: String?
 
-        init(onBeginEditing: @escaping () -> Void, onCommit: @escaping (String) -> Void, onEndEditing: (() -> Void)?, valueKind: InputValueKind) {
+        init(
+            onBeginEditing: @escaping () -> Void,
+            onCommit: @escaping (String) -> Void,
+            onEndEditing: (() -> Void)?,
+            valueKind: InputValueKind
+        ) {
             self.onBeginEditing = onBeginEditing
             self.onCommit = onCommit
             self.onEndEditing = onEndEditing
@@ -2015,9 +2024,7 @@ private struct SelectAllTextField: UIViewRepresentable {
             originalValue = textField.text
             onBeginEditing()
             // Select all so typing immediately replaces the existing value
-            DispatchQueue.main.async {
-                textField.selectAll(nil)
-            }
+            DispatchQueue.main.async { textField.selectAll(nil) }
         }
 
         func textFieldDidEndEditing(_ textField: UITextField) {
@@ -2053,14 +2060,89 @@ private struct SelectAllTextField: UIViewRepresentable {
     }
 }
 
+// Plain vertical bar cursor; suppress copy/paste menu
 private final class HiddenCaretTextField: UITextField {
-    // Show a plain vertical bar cursor (no water-drop handles)
-    override func selectionRects(for range: UITextRange) -> [UITextSelectionRect] {
-        []
+    override func selectionRects(for range: UITextRange) -> [UITextSelectionRect] { [] }
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool { false }
+}
+
+// Attach a window-level tap recognizer that dismisses the keyboard on any tap
+// outside a text field. cancelsTouchesInView=false keeps button/textfield taps working.
+private struct WindowKeyboardDismiss: UIViewRepresentable {
+    func makeCoordinator() -> Coordinator { Coordinator() }
+
+    func makeUIView(context: Context) -> HostView {
+        let v = HostView()
+        v.coordinator = context.coordinator
+        v.isUserInteractionEnabled = false
+        v.backgroundColor = .clear
+        return v
     }
 
-    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
-        false
+    func updateUIView(_ uiView: HostView, context: Context) {}
+
+    static func dismantleUIView(_ uiView: HostView, coordinator: Coordinator) {
+        coordinator.detach()
+    }
+
+    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
+        private weak var gesture: UITapGestureRecognizer?
+        private weak var attachedWindow: UIWindow?
+
+        func attach(to window: UIWindow) {
+            if gesture != nil && attachedWindow === window { return }
+            detach()
+            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
+            tap.cancelsTouchesInView = false
+            tap.delegate = self
+            window.addGestureRecognizer(tap)
+            gesture = tap
+            attachedWindow = window
+        }
+
+        func detach() {
+            if let g = gesture, let w = attachedWindow {
+                w.removeGestureRecognizer(g)
+            }
+            gesture = nil
+            attachedWindow = nil
+        }
+
+        @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
+            guard let view = gesture.view else { return }
+            let location = gesture.location(in: view)
+            if let hit = view.hitTest(location, with: nil) {
+                var current: UIView? = hit
+                while let v = current {
+                    if v is UITextField || v is UITextView { return }
+                    current = v.superview
+                }
+            }
+            UIApplication.shared.sendAction(
+                #selector(UIResponder.resignFirstResponder),
+                to: nil, from: nil, for: nil
+            )
+        }
+
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
+        ) -> Bool {
+            true
+        }
+    }
+
+    final class HostView: UIView {
+        weak var coordinator: Coordinator?
+
+        override func didMoveToWindow() {
+            super.didMoveToWindow()
+            if let window = self.window {
+                coordinator?.attach(to: window)
+            } else {
+                coordinator?.detach()
+            }
+        }
     }
 }
 
@@ -2071,17 +2153,17 @@ private struct AddPlaceholderCell: View {
         ZStack {
             RoundedRectangle(cornerRadius: 14, style: .continuous)
                 .stroke(AppTheme.fg4, style: StrokeStyle(lineWidth: 1.2, dash: [4, 4]))
-                .frame(width: width)
-                .frame(height: 36)
+                .frame(width: width, height: 36)
 
             Image(systemName: "plus")
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(AppTheme.fg3)
         }
-        .frame(width: width)
-        .frame(height: 36)
+        .frame(width: width, height: 36)
     }
 }
+
+// MARK: - Layout constants
 
 private enum WorkoutCardLayout {
     static let setIndexWidth: CGFloat = 28
@@ -2093,33 +2175,7 @@ private enum WorkoutCardLayout {
     static let inputFontSize: CGFloat = 14
 }
 
-private struct RestProgressRing: View {
-    let progress: Double
-    let remainingSeconds: Int
-    var lineWidth: CGFloat = 6
-    var symbolSize: CGFloat = 20
-
-    var body: some View {
-        ZStack {
-            Circle()
-                .stroke(AppTheme.fillSubtle, lineWidth: lineWidth)
-
-            Circle()
-                .trim(from: 0, to: progress)
-                .stroke(
-                    AppTheme.orangeDeep,
-                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .round)
-                )
-                .rotationEffect(.degrees(-90))
-                .animation(.linear(duration: 1), value: progress)
-
-            Image(systemName: remainingSeconds <= 3 ? "bell.fill" : "timer")
-                .font(.system(size: symbolSize, weight: .semibold))
-                .foregroundStyle(.primary)
-        }
-        .accessibilityHidden(true)
-    }
-}
+// MARK: - Rest adjust button
 
 private struct RestAdjustButton: View {
     let symbol: String
@@ -2138,6 +2194,8 @@ private struct RestAdjustButton: View {
     }
 }
 
+// MARK: - Summary overlay
+
 private struct WorkoutSummaryOverlay: View {
     let workout: WorkoutSession
     let weightUnit: WeightUnit
@@ -2146,8 +2204,7 @@ private struct WorkoutSummaryOverlay: View {
 
     var body: some View {
         ZStack {
-            AppTheme.fg1.opacity(0.7)
-                .ignoresSafeArea()
+            AppTheme.fg1.opacity(0.7).ignoresSafeArea()
 
             VStack(spacing: 28) {
                 Spacer()
@@ -2156,8 +2213,7 @@ private struct WorkoutSummaryOverlay: View {
                     .font(.system(size: 56))
                     .foregroundStyle(AppTheme.confirm)
 
-                Text("训练完成")
-                    .font(.system(size: 28, weight: .bold))
+                Text("训练完成").font(.system(size: 28, weight: .bold))
 
                 Text(workout.elapsedTimeText)
                     .font(.system(size: 48, weight: .black, design: .rounded))
@@ -2198,14 +2254,15 @@ private struct WorkoutSummaryOverlay: View {
 
     private func summaryStatItem(title: String, value: String) -> some View {
         VStack(spacing: 6) {
-            Text(value)
-                .font(.system(size: 22, weight: .bold, design: .rounded))
+            Text(value).font(.system(size: 22, weight: .bold, design: .rounded))
             Text(title)
                 .font(.system(size: 12, weight: .medium))
                 .foregroundStyle(.white.opacity(0.6))
         }
     }
 }
+
+// MARK: - Edit default rest sheet
 
 private struct EditDefaultRestSheet: View {
     let currentSeconds: Int
@@ -2271,7 +2328,9 @@ private struct EditDefaultRestSheet: View {
     }
 }
 
-private struct BodyweightInputSheet: View {
+// MARK: - Bodyweight input sheet
+
+struct BodyweightInputSheet: View {
     let currentKg: Double?
     let onConfirm: (Double) -> Void
     @Environment(\.dismiss) private var dismiss
@@ -2281,20 +2340,15 @@ private struct BodyweightInputSheet: View {
         self.currentKg = currentKg
         self.onConfirm = onConfirm
         if let kg = currentKg {
-            if kg.truncatingRemainder(dividingBy: 1) == 0 {
-                _text = State(initialValue: String(format: "%.0f", kg))
-            } else {
-                _text = State(initialValue: String(format: "%.1f", kg))
-            }
+            let format = kg.truncatingRemainder(dividingBy: 1) == 0 ? "%.0f" : "%.1f"
+            _text = State(initialValue: String(format: format, kg))
         } else {
             _text = State(initialValue: "")
         }
     }
 
     private var hintText: String {
-        currentKg == nil
-            ? "首次需手动输入自重"
-            : "长按按钮可再次修改自重"
+        currentKg == nil ? "首次需手动输入自重" : "长按按钮可再次修改自重"
     }
 
     var body: some View {
@@ -2354,24 +2408,8 @@ private struct BodyweightInputSheet: View {
     }
 }
 
-private struct CurrentWorkoutPreviewHost: View {
-    @Query(
-        filter: #Predicate<WorkoutSession> { session in
-            session.isCompleted == false
-        },
-        sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]
-    ) private var sessions: [WorkoutSession]
+// MARK: - Replace exercise picker
 
-    var body: some View {
-        NavigationStack {
-            if let session = sessions.first {
-                CurrentWorkoutView(workout: session)
-            } else {
-                Text("没有可预览的训练数据")
-            }
-        }
-    }
-}
 struct ExerciseReplacePickerView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -2415,9 +2453,7 @@ struct ExerciseReplacePickerView: View {
                 }
 
                 List(filteredExercises) { item in
-                    Button {
-                        replace(with: item)
-                    } label: {
+                    Button { replace(with: item) } label: {
                         VStack(alignment: .leading, spacing: 3) {
                             Text(item.name)
                                 .font(.system(size: 15, weight: .regular))
@@ -2451,6 +2487,27 @@ struct ExerciseReplacePickerView: View {
     }
 }
 
+// MARK: - Preview
+
+private struct CurrentWorkoutPreviewHost: View {
+    @Query(
+        filter: #Predicate<WorkoutSession> { session in
+            session.isCompleted == false
+        },
+        sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]
+    ) private var sessions: [WorkoutSession]
+
+    var body: some View {
+        NavigationStack {
+            if let session = sessions.first {
+                CurrentWorkoutView(workout: session)
+            } else {
+                Text("没有可预览的训练数据")
+            }
+        }
+    }
+}
+
 #Preview {
     CurrentWorkoutPreviewHost()
         .modelContainer(PreviewModelContainer.shared)
@@ -2465,7 +2522,11 @@ enum PreviewModelContainer {
             WorkoutSet.self,
             ExerciseCatalogItem.self,
             WorkoutTemplate.self,
-            TemplateExercise.self
+            TemplateExercise.self,
+            MacrocycleProgram.self,
+            Mesocycle.self,
+            MesocycleWeek.self,
+            MesocycleDay.self
         ])
         let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
 

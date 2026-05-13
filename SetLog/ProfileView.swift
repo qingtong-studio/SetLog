@@ -34,6 +34,7 @@ struct ProfileView: View {
     @State private var fileExportProgress: Double = 0
     @State private var previewTask: Task<Void, Never>?
     @State private var fileExportTask: Task<Void, Never>?
+    @State private var showBodyweightSheet = false
     private let accountState: AccountState = .guest
     private let regularSettings = SettingSection(
         title: "常规设置",
@@ -66,6 +67,7 @@ struct ProfileView: View {
                 localStatsCard
                 exportCard
                 syncNoticeCard
+                bodyweightSettingCard
                 settingsSection(regularSettings)
                 settingsSection(guestAccountSection)
                 settingsSection(supportSettings)
@@ -531,6 +533,70 @@ struct ProfileView: View {
                     .stroke(AppTheme.fillMedium, lineWidth: 1)
             )
         }
+    }
+
+    private var bodyweightSettingCard: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text("个人资料")
+                .font(.system(size: 12, weight: .semibold))
+                .foregroundStyle(AppTheme.fg2)
+
+            Button {
+                ensurePreferences()
+                showBodyweightSheet = true
+            } label: {
+                HStack(spacing: 12) {
+                    Image(systemName: "figure.stand")
+                        .font(.system(size: 15, weight: .medium))
+                        .foregroundStyle(AppTheme.fg2)
+                        .frame(width: 30, height: 30)
+                        .background(AppTheme.fillMedium)
+                        .clipShape(Circle())
+
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("自重")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(AppTheme.fg1)
+                        Text("应用于含自重的动作，可在训练中再次修改")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.fg2)
+                    }
+
+                    Spacer()
+
+                    Text(bodyweightDisplayText)
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.fg2)
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12, weight: .semibold))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 14)
+                .frame(minHeight: 68)
+            }
+            .buttonStyle(.plain)
+            .background(AppTheme.bgCard)
+            .clipShape(RoundedRectangle(cornerRadius: 18, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 18, style: .continuous)
+                    .stroke(AppTheme.fillMedium, lineWidth: 1)
+            )
+        }
+        .sheet(isPresented: $showBodyweightSheet) {
+            BodyweightInputSheet(
+                currentKg: appPreferences?.bodyweightKg
+            ) { kg in
+                ensurePreferences()
+                appPreferences?.bodyweightKg = kg
+                appPreferences?.updatedAt = .now
+                try? modelContext.save()
+            }
+        }
+    }
+
+    private var bodyweightDisplayText: String {
+        guard let kg = appPreferences?.bodyweightKg, kg > 0 else { return "未设置" }
+        return kg.formattedWeightWithUnit(unit: appPreferences?.weightUnit ?? .kilogram)
     }
 
     private var logoutButton: some View {

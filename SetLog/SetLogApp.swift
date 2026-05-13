@@ -19,7 +19,13 @@ struct SetLogApp: App {
             WorkoutSet.self,
             ExerciseCatalogItem.self,
             WorkoutTemplate.self,
-            TemplateExercise.self
+            TemplateExercise.self,
+            MacrocycleProgram.self,
+            Mesocycle.self,
+            MesocycleWeek.self,
+            MesocycleDay.self,
+            DailyPlan.self,
+            DailyPlanExercise.self
         ])
         let modelConfiguration = ModelConfiguration(
             schema: schema,

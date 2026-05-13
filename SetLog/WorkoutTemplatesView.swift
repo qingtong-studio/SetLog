@@ -14,9 +14,9 @@ struct WorkoutTemplatesView: View {
     @State private var detailTemplate: WorkoutTemplate?
     @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var templates: [WorkoutTemplate]
 
-    let onApplyTemplate: (WorkoutTemplate) -> Void
+    let onApplyTemplate: (WorkoutTemplate, WorkoutStartMode) -> Void
 
-    init(onApplyTemplate: @escaping (WorkoutTemplate) -> Void = { _ in }) {
+    init(onApplyTemplate: @escaping (WorkoutTemplate, WorkoutStartMode) -> Void = { _, _ in }) {
         self.onApplyTemplate = onApplyTemplate
     }
 
@@ -181,7 +181,9 @@ struct WorkoutTemplatesView: View {
                 spacing: 12
             ) {
                 ForEach(group.templates) { template in
-                    WorkoutTemplateCard(template: template, onApply: onApplyTemplate)
+                    WorkoutTemplateCard(template: template) { template in
+                        onApplyTemplate(template, .normal)
+                    }
                         .contentShape(Rectangle())
                         .onTapGesture {
                             detailTemplate = template

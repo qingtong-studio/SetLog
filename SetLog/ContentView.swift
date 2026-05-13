@@ -57,15 +57,24 @@ struct ContentView: View {
                 onStartTemplate: { template in
                     let session = createWorkout(from: template)
                     activeWorkoutSession = session
+                },
+                onStartCycleDay: { template, pointer in
+                    let session = createWorkout(from: template, cyclePointer: pointer)
+                    activeWorkoutSession = session
+                },
+                onOpenMacrocycleHome: {
+                    trainPath.append(.macrocycleHome)
                 }
             )
             .navigationDestination(for: TrainRoute.self) { route in
                 switch route {
                 case .templates:
-                    WorkoutTemplatesView { template in
-                        let session = createWorkout(from: template)
+                    WorkoutTemplatesView { template, mode in
+                        let session = createWorkout(from: template, mode: mode)
                         activeWorkoutSession = session
                     }
+                case .macrocycleHome:
+                    MacrocycleHomeView()
                 }
             }
         }
@@ -159,14 +168,30 @@ struct ContentView: View {
         return try? modelContext.fetch(descriptor).first
     }
 
-    private func createWorkout(from template: WorkoutTemplate) -> WorkoutSession {
+    private func createWorkout(
+        from template: WorkoutTemplate,
+        mode: WorkoutStartMode = .normal,
+        cyclePointer: CyclePointer? = nil
+    ) -> WorkoutSession {
         let session = WorkoutSession(
             title: template.title,
             dateStarted: .now,
             templateName: template.title,
-            isCompleted: false
+            isCompleted: false,
+            startMode: mode
         )
+        if let ptr = cyclePointer {
+            session.macrocycleProgramID = ptr.macro.id
+            session.mesocycleID = ptr.meso.id
+            session.mesocyclePhase = ptr.meso.phaseLabel
+            session.mesocycleWeekIndex = ptr.weekIndex
+            session.mesocycleDayIndex = ptr.dayIndex
+        }
         modelContext.insert(session)
+
+        let multiplier = cyclePointer?.weekMultiplier ?? 1.0
+        let phaseRepsHigh = cyclePointer?.meso.targetRepsHigh ?? 0
+        let dailyPlan = DailyPlan.findTodayPlan(templateID: template.id, in: modelContext)
 
         for (exerciseOrder, templateExercise) in (template.exercises ?? [])
             .sorted(by: { $0.order < $1.order })
@@ -179,18 +204,35 @@ struct ContentView: View {
             )
 
             let prefs = catalogItem(named: templateExercise.name)
-            let suggestedWeight = prefs?.preferredWeightKg
-                ?? lastUserWeight(forExerciseNamed: templateExercise.name)
-                ?? templateExercise.defaultWeightKg
             if let mode = prefs?.preferredWeightMode {
                 workoutExercise.weightMode = mode
             }
             let restSeconds = prefs?.preferredRestSeconds ?? 90
 
-            workoutExercise.sets = (1...max(1, templateExercise.defaultSets)).map { index in
+            let dpe = dailyPlan?.orderedExercises.first { $0.exerciseName == templateExercise.name }
+
+            let suggestedWeight: Double
+            let setCount: Int
+            let targetReps: Int
+            if let dpe {
+                // DailyPlan reflects the user's explicit choice for today —
+                // do NOT re-apply the cycle multiplier on top of it.
+                suggestedWeight = dpe.weightKg
+                setCount = max(1, dpe.sets)
+                targetReps = dpe.reps
+            } else {
+                let baseWeight = prefs?.preferredWeightKg
+                    ?? lastUserWeight(forExerciseNamed: templateExercise.name)
+                    ?? templateExercise.defaultWeightKg
+                suggestedWeight = baseWeight * multiplier
+                setCount = max(1, templateExercise.defaultSets)
+                targetReps = phaseRepsHigh > 0 ? phaseRepsHigh : templateExercise.defaultReps
+            }
+
+            workoutExercise.sets = (1...setCount).map { index in
                 WorkoutSet(
                     index: index,
-                    targetReps: templateExercise.defaultReps,
+                    targetReps: targetReps,
                     actualReps: nil,
                     weightKg: suggestedWeight,
                     restAfter: TimeInterval(restSeconds),
@@ -253,18 +295,27 @@ private struct HomeDashboardView: View {
     ) private var unfinishedSessions: [WorkoutSession]
     @Query(sort: [SortDescriptor(\WorkoutSession.dateStarted, order: .reverse)]) private var allSessions: [WorkoutSession]
     @Query(sort: [SortDescriptor(\WorkoutTemplate.createdAt, order: .reverse)]) private var workoutTemplates: [WorkoutTemplate]
+    @Query(filter: #Predicate<MacrocycleProgram> { $0.isActive == true })
+    private var activeMacros: [MacrocycleProgram]
     @State private var now = Date.now
 
     let onQuickStart: () -> Void
     let onOpenSession: (WorkoutSession) -> Void
     let onOpenTemplates: () -> Void
     let onStartTemplate: (WorkoutTemplate) -> Void
+    let onStartCycleDay: (WorkoutTemplate, CyclePointer) -> Void
+    let onOpenMacrocycleHome: () -> Void
 
     var body: some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 18) {
                 topBar
                 overviewSection
+                if let pointer = activeCyclePointer {
+                    mesocycleTodayCard(pointer: pointer)
+                } else {
+                    mesocycleEmptyEntry
+                }
                 if let activeSession = activeSessions.first {
                     activeWorkoutCard(session: activeSession)
                 }
@@ -295,6 +346,135 @@ private struct HomeDashboardView: View {
 
     private var activeSessions: [WorkoutSession] {
         unfinishedSessions.filter { $0.workoutHasStarted }
+    }
+
+    private var activeCyclePointer: CyclePointer? {
+        guard let macro = activeMacros.first else { return nil }
+        return macro.locate(on: now)
+    }
+
+    private func template(for id: UUID?) -> WorkoutTemplate? {
+        guard let id else { return nil }
+        return workoutTemplates.first(where: { $0.id == id })
+    }
+
+    private var mesocycleEmptyEntry: some View {
+        Button(action: onOpenMacrocycleHome) {
+            HStack(spacing: 10) {
+                Image(systemName: "calendar.badge.clock")
+                    .font(.system(size: 14, weight: .semibold))
+                Text("开启周期训练")
+                    .font(.system(size: 14, weight: .semibold))
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+            }
+            .foregroundStyle(AppTheme.fg2)
+            .padding(.horizontal, 16)
+            .frame(height: 48)
+            .frame(maxWidth: .infinity)
+            .background(AppTheme.bgCard)
+            .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+            .overlay(
+                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                    .stroke(style: StrokeStyle(lineWidth: 1, dash: [4, 4]))
+                    .foregroundStyle(AppTheme.fg4)
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private func mesocycleTodayCard(pointer: CyclePointer) -> some View {
+        let day = pointer.todayDay
+        let template = template(for: day?.templateID)
+        let multText = String(format: "×%.3g", pointer.weekMultiplier)
+
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 8) {
+                Text(pointer.meso.phaseLabel)
+                    .font(.system(size: 13, weight: .bold))
+                    .foregroundStyle(.white)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(AppTheme.orange)
+                    .clipShape(Capsule())
+                Text("第 \(pointer.weekIndex + 1) / \(pointer.meso.totalWeeks) 周")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(AppTheme.fg2)
+                Spacer()
+                if pointer.isDeload {
+                    Text("减载 \(multText)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(AppTheme.danger)
+                } else {
+                    Text("加重 \(multText)")
+                        .font(.system(size: 11, weight: .bold))
+                        .foregroundStyle(AppTheme.confirm)
+                }
+                Button {
+                    onOpenMacrocycleHome()
+                } label: {
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 13, weight: .semibold))
+                        .foregroundStyle(AppTheme.fg2)
+                }
+                .buttonStyle(.plain)
+            }
+
+            if pointer.isRestDay || day == nil {
+                Text("今日休息")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.fg2)
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(day?.label ?? "今日训练")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundStyle(AppTheme.fg1)
+                    HStack(spacing: 8) {
+                        Text(template?.title ?? "未绑定模板")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.fg2)
+                        Text("·")
+                            .foregroundStyle(AppTheme.fg2)
+                        Text("\(pointer.meso.targetRepsLow)–\(pointer.meso.targetRepsHigh) 次")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.fg2)
+                        Text("·")
+                            .foregroundStyle(AppTheme.fg2)
+                        Text("RPE \(String(format: "%.1f", pointer.meso.defaultRpeCap))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.fg2)
+                    }
+                }
+
+                Button {
+                    if let template { onStartCycleDay(template, pointer) }
+                } label: {
+                    HStack {
+                        Image(systemName: "play.fill")
+                            .font(.system(size: 13, weight: .bold))
+                        Text(template == nil ? "模板已删除" : "开始今日训练")
+                            .font(.system(size: 14, weight: .semibold))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 42)
+                    .background(template == nil ? AppTheme.fg3 : AppTheme.orange)
+                    .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                }
+                .buttonStyle(.plain)
+                .disabled(template == nil)
+            }
+        }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(AppTheme.bgCard)
+        .clipShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .overlay(
+            RoundedRectangle(cornerRadius: 22, style: .continuous)
+                .stroke(AppTheme.orange.opacity(0.3), lineWidth: 1)
+        )
     }
 
     private var topBar: some View {
@@ -798,6 +978,7 @@ private enum AppTab: CaseIterable {
 
 private enum TrainRoute: Hashable {
     case templates
+    case macrocycleHome
 }
 
 // MARK: - 编辑记录目标页（通过 sessionID 查询已有 session）

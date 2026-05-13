@@ -11,6 +11,42 @@ enum SetType: String, Codable, CaseIterable {
     case working = "working"
 }
 
+/// Mode chosen when a workout session is started. Acts as the extensible
+/// interface for adjusting how a session reads/writes data ("减载模式" being
+/// the first non-default mode). Add a case here and update
+/// `WorkoutStartModeBehavior` to introduce a new mode.
+enum WorkoutStartMode: String, Codable, CaseIterable {
+    case normal
+    case deload
+
+    var displayName: String {
+        switch self {
+        case .normal: return "正常"
+        case .deload: return "减载"
+        }
+    }
+}
+
+/// Per-mode behavior knobs. Future modes extend this with new toggles
+/// (e.g. `volumeMultiplier`, `repAdjustment`) so callers stay decoupled
+/// from the raw mode value.
+struct WorkoutStartModeBehavior {
+    /// Whether completing the session should overwrite each exercise's
+    /// preferred weight / rest in the catalog.
+    let persistsPreferredWeights: Bool
+    /// Whether saving back to the source template is allowed for this mode.
+    let allowsTemplateSaveBack: Bool
+
+    static func behavior(for mode: WorkoutStartMode) -> WorkoutStartModeBehavior {
+        switch mode {
+        case .normal:
+            return .init(persistsPreferredWeights: true, allowsTemplateSaveBack: true)
+        case .deload:
+            return .init(persistsPreferredWeights: false, allowsTemplateSaveBack: false)
+        }
+    }
+}
+
 enum ExerciseWeightMode: String, Codable, CaseIterable {
     case standard = "standard"      // 非单边 - 输入总重（器械/杠铃）
     case singleHand = "singleHand"  // 单边 - 输入单边重量（哑铃）
@@ -29,6 +65,7 @@ final class AppPreferences {
     var notificationsEnabled: Bool = true
     var hasSeededDefaults: Bool = false
     var seedVersion: Int = 0
+    var bodyweightKg: Double?
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
 
@@ -37,6 +74,7 @@ final class AppPreferences {
         notificationsEnabled: Bool = true,
         hasSeededDefaults: Bool = false,
         seedVersion: Int = 0,
+        bodyweightKg: Double? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -44,6 +82,7 @@ final class AppPreferences {
         self.notificationsEnabled = notificationsEnabled
         self.hasSeededDefaults = hasSeededDefaults
         self.seedVersion = seedVersion
+        self.bodyweightKg = bodyweightKg
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -76,8 +115,14 @@ final class WorkoutSession {
     var restIsPaused: Bool = false
     var restLastUpdatedAt: Date?
     var restActualSeconds: Int?
+    var startModeRawValue: String = WorkoutStartMode.normal.rawValue
     var createdAt: Date = Date.now
     var updatedAt: Date = Date.now
+    var macrocycleProgramID: UUID?
+    var mesocycleID: UUID?
+    var mesocyclePhase: String?
+    var mesocycleWeekIndex: Int?
+    var mesocycleDayIndex: Int?
     @Relationship(deleteRule: .cascade, inverse: \WorkoutExercise.session)
     var exercises: [WorkoutExercise]? = []
 
@@ -92,6 +137,7 @@ final class WorkoutSession {
         notes: String = "",
         templateName: String? = nil,
         isCompleted: Bool = false,
+        startMode: WorkoutStartMode = .normal,
         restStartTime: Date? = nil,
         restSourceSetID: UUID? = nil,
         restTargetSeconds: Int = 90,
@@ -113,6 +159,7 @@ final class WorkoutSession {
         self.notes = notes
         self.templateName = templateName
         self.isCompleted = isCompleted
+        self.startModeRawValue = startMode.rawValue
         self.restStartTime = restStartTime
         self.restSourceSetID = restSourceSetID
         self.restTargetSeconds = restTargetSeconds
@@ -333,7 +380,246 @@ final class TemplateExercise {
     }
 }
 
+// MARK: - Daily Plan (single-day template overrides)
+
+/// One-time per-day overrides for a template, used when the user wants to
+/// adjust weights/sets/reps for a single training day (e.g. deload week)
+/// without permanently modifying the template defaults. Created from the
+/// template detail view; consumed when starting today's workout; deleted
+/// automatically once that workout completes.
+@Model
+final class DailyPlan {
+    var id: UUID = UUID()
+    var date: Date = Date.now
+    var templateID: UUID = UUID()
+    var createdAt: Date = Date.now
+    var updatedAt: Date = Date.now
+    @Relationship(deleteRule: .cascade, inverse: \DailyPlanExercise.plan)
+    var exercises: [DailyPlanExercise]? = []
+
+    init(
+        id: UUID = UUID(),
+        date: Date = DailyPlan.startOfToday(),
+        templateID: UUID,
+        createdAt: Date = .now,
+        updatedAt: Date = .now,
+        exercises: [DailyPlanExercise] = []
+    ) {
+        self.id = id
+        self.date = date
+        self.templateID = templateID
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.exercises = exercises
+    }
+}
+
+@Model
+final class DailyPlanExercise {
+    var id: UUID = UUID()
+    var exerciseName: String = ""
+    var order: Int = 0
+    var sets: Int = 0
+    var reps: Int = 0
+    var weightKg: Double = 0
+    var plan: DailyPlan?
+
+    init(
+        id: UUID = UUID(),
+        exerciseName: String,
+        order: Int,
+        sets: Int,
+        reps: Int,
+        weightKg: Double,
+        plan: DailyPlan? = nil
+    ) {
+        self.id = id
+        self.exerciseName = exerciseName
+        self.order = order
+        self.sets = sets
+        self.reps = reps
+        self.weightKg = weightKg
+        self.plan = plan
+    }
+}
+
+extension DailyPlan {
+    static func startOfToday(_ now: Date = .now) -> Date {
+        Calendar.current.startOfDay(for: now)
+    }
+
+    static func findTodayPlan(templateID: UUID, in context: ModelContext) -> DailyPlan? {
+        let dayStart = startOfToday()
+        guard let dayEnd = Calendar.current.date(byAdding: .day, value: 1, to: dayStart) else {
+            return nil
+        }
+        var descriptor = FetchDescriptor<DailyPlan>(
+            predicate: #Predicate { plan in
+                plan.templateID == templateID && plan.date >= dayStart && plan.date < dayEnd
+            }
+        )
+        descriptor.fetchLimit = 1
+        return try? context.fetch(descriptor).first
+    }
+
+    var orderedExercises: [DailyPlanExercise] {
+        (exercises ?? []).sorted { $0.order < $1.order }
+    }
+}
+
+// MARK: - Periodization (Macro / Meso)
+
+@Model
+final class MacrocycleProgram {
+    var id: UUID = UUID()
+    var title: String = ""
+    var startDate: Date = Date.now
+    var isActive: Bool = false
+    var createdAt: Date = Date.now
+    var endedAt: Date?
+    @Relationship(deleteRule: .cascade, inverse: \Mesocycle.macro)
+    var mesocycles: [Mesocycle]? = []
+
+    init(
+        id: UUID = UUID(),
+        title: String = "",
+        startDate: Date = .now,
+        isActive: Bool = false,
+        createdAt: Date = .now,
+        endedAt: Date? = nil,
+        mesocycles: [Mesocycle] = []
+    ) {
+        self.id = id
+        self.title = title
+        self.startDate = startDate
+        self.isActive = isActive
+        self.createdAt = createdAt
+        self.endedAt = endedAt
+        self.mesocycles = mesocycles
+    }
+}
+
+@Model
+final class Mesocycle {
+    var id: UUID = UUID()
+    var order: Int = 0
+    var phase: String = "hypertrophy"
+    var phaseLabel: String = "增肌"
+    var totalWeeks: Int = 4
+    var daysPerWeek: Int = 4
+    var defaultRpeCap: Double = 8.0
+    var targetRepsLow: Int = 8
+    var targetRepsHigh: Int = 12
+    var notes: String = ""
+    var macro: MacrocycleProgram?
+    @Relationship(deleteRule: .cascade, inverse: \MesocycleWeek.meso)
+    var weeks: [MesocycleWeek]? = []
+    @Relationship(deleteRule: .cascade, inverse: \MesocycleDay.meso)
+    var days: [MesocycleDay]? = []
+
+    init(
+        id: UUID = UUID(),
+        order: Int = 0,
+        phase: String = "hypertrophy",
+        phaseLabel: String = "增肌",
+        totalWeeks: Int = 4,
+        daysPerWeek: Int = 4,
+        defaultRpeCap: Double = 8.0,
+        targetRepsLow: Int = 8,
+        targetRepsHigh: Int = 12,
+        notes: String = "",
+        macro: MacrocycleProgram? = nil,
+        weeks: [MesocycleWeek] = [],
+        days: [MesocycleDay] = []
+    ) {
+        self.id = id
+        self.order = order
+        self.phase = phase
+        self.phaseLabel = phaseLabel
+        self.totalWeeks = totalWeeks
+        self.daysPerWeek = daysPerWeek
+        self.defaultRpeCap = defaultRpeCap
+        self.targetRepsLow = targetRepsLow
+        self.targetRepsHigh = targetRepsHigh
+        self.notes = notes
+        self.macro = macro
+        self.weeks = weeks
+        self.days = days
+    }
+}
+
+@Model
+final class MesocycleWeek {
+    var id: UUID = UUID()
+    var weekIndex: Int = 0
+    var loadMultiplier: Double = 1.0
+    var isDeload: Bool = false
+    var meso: Mesocycle?
+
+    init(
+        id: UUID = UUID(),
+        weekIndex: Int,
+        loadMultiplier: Double,
+        isDeload: Bool,
+        meso: Mesocycle? = nil
+    ) {
+        self.id = id
+        self.weekIndex = weekIndex
+        self.loadMultiplier = loadMultiplier
+        self.isDeload = isDeload
+        self.meso = meso
+    }
+}
+
+@Model
+final class MesocycleDay {
+    var id: UUID = UUID()
+    var dayIndex: Int = 0
+    var label: String = ""
+    var templateID: UUID?
+    var meso: Mesocycle?
+
+    init(
+        id: UUID = UUID(),
+        dayIndex: Int,
+        label: String,
+        templateID: UUID? = nil,
+        meso: Mesocycle? = nil
+    ) {
+        self.id = id
+        self.dayIndex = dayIndex
+        self.label = label
+        self.templateID = templateID
+        self.meso = meso
+    }
+}
+
+extension MacrocycleProgram {
+    var orderedMesocycles: [Mesocycle] {
+        (mesocycles ?? []).sorted { $0.order < $1.order }
+    }
+}
+
+extension Mesocycle {
+    var orderedWeeks: [MesocycleWeek] {
+        (weeks ?? []).sorted { $0.weekIndex < $1.weekIndex }
+    }
+
+    var orderedDays: [MesocycleDay] {
+        (days ?? []).sorted { $0.dayIndex < $1.dayIndex }
+    }
+}
+
 extension WorkoutSession {
+    var startMode: WorkoutStartMode {
+        get { WorkoutStartMode(rawValue: startModeRawValue) ?? .normal }
+        set { startModeRawValue = newValue.rawValue }
+    }
+
+    var startModeBehavior: WorkoutStartModeBehavior {
+        WorkoutStartModeBehavior.behavior(for: startMode)
+    }
+
     var orderedExercises: [WorkoutExercise] {
         (exercises ?? []).sorted { $0.order < $1.order }
     }
@@ -544,6 +830,7 @@ enum ExercisePreferences {
     /// rest seconds) based on the latest completed work in the session. Should be
     /// called once when a workout is marked completed.
     static func apply(from session: WorkoutSession, in context: ModelContext) {
+        guard session.startModeBehavior.persistsPreferredWeights else { return }
         for exercise in session.orderedExercises {
             let workingSets = exercise.workingSets.filter(\.isCompleted)
             guard !workingSets.isEmpty else { continue }
