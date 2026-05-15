@@ -39,6 +39,7 @@ struct ContentView: View {
         }
         .background(AppTheme.bgPage)
         .tint(AppTheme.orange)
+        .dismissKeyboardOnTapOutside()
     }
 
     private var trainStack: some View {

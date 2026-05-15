@@ -1442,6 +1442,33 @@ enum SampleDataSeeder {
     }
 
     private static func makeSessions() -> [WorkoutSession] {
+        // Prefer the rich DemoSessions.json bundled with the app for a
+        // realistic showcase (3 weeks of training across the v4 5-day split,
+        // including warmup sets, RPE, rest seconds, bodyweight exercises,
+        // and one in-progress session). Falls back to a small hardcoded
+        // demo if the resource is missing or fails to decode.
+        if let sessions = loadDemoSessionsFromBundle(), !sessions.isEmpty {
+            return sessions
+        }
+        return makeFallbackSessions()
+    }
+
+    private static func loadDemoSessionsFromBundle() -> [WorkoutSession]? {
+        guard let url = Bundle.main.url(forResource: "DemoSessions", withExtension: "json") else {
+            return nil
+        }
+        do {
+            let data = try Data(contentsOf: url)
+            let decoder = JSONDecoder()
+            decoder.dateDecodingStrategy = .iso8601
+            let root = try decoder.decode(SeedRootDTO.self, from: data)
+            return root.sessions.map { $0.toWorkoutSession() }
+        } catch {
+            return nil
+        }
+    }
+
+    private static func makeFallbackSessions() -> [WorkoutSession] {
         let activeSession = WorkoutSession(
             title: "今日自由训练",
             dateStarted: .now,
@@ -1507,5 +1534,127 @@ enum SampleDataSeeder {
         completedSession.exercises = [squat, press]
 
         return [activeSession, completedSession]
+    }
+}
+
+// MARK: - Demo data DTOs
+//
+// These mirror the export schema produced by `WorkoutSession.generateJSON`
+// so that an exported file can be re-imported as seed data. They are kept
+// `private` so they don't clash with the export-only `Export*DTO` types.
+
+private struct SeedRootDTO: Decodable {
+    let sessions: [SeedSessionDTO]
+}
+
+private struct SeedSessionDTO: Decodable {
+    let id: String?
+    let title: String
+    let dateStarted: Date
+    let dateEnded: Date?
+    let durationSeconds: Int?
+    let templateName: String?
+    let notes: String?
+    let exercises: [SeedExerciseDTO]
+
+    func toWorkoutSession() -> WorkoutSession {
+        let exerciseModels = exercises.map { $0.toWorkoutExercise() }
+        let hasAnyCompletedSet = exerciseModels.contains { exercise in
+            (exercise.sets ?? []).contains { $0.isCompleted }
+        }
+        // Treat a session as "completed" when it was ended AND has at
+        // least one logged set. An exported but empty session (e.g. one
+        // started but never logged) is mapped to an in-progress session
+        // so the current-workout view picks it up naturally.
+        let isCompleted: Bool
+        let resolvedDateEnded: Date?
+        if hasAnyCompletedSet {
+            isCompleted = (dateEnded != nil)
+            resolvedDateEnded = dateEnded
+        } else {
+            isCompleted = false
+            resolvedDateEnded = nil
+        }
+
+        let session = WorkoutSession(
+            id: UUID(uuidString: id ?? "") ?? UUID(),
+            title: title,
+            dateStarted: dateStarted,
+            dateEnded: resolvedDateEnded,
+            workoutTimerStartedAt: nil,
+            workoutElapsedOffset: TimeInterval(durationSeconds ?? 0),
+            workoutIsRunning: false,
+            notes: notes ?? "",
+            templateName: templateName,
+            isCompleted: isCompleted
+        )
+        for exercise in exerciseModels {
+            exercise.session = session
+            for set in exercise.sets ?? [] {
+                set.exercise = exercise
+            }
+        }
+        session.exercises = exerciseModels
+        return session
+    }
+}
+
+private struct SeedExerciseDTO: Decodable {
+    let id: String?
+    let name: String
+    let category: String
+    let order: Int
+    let weightMode: String?
+    let includesBodyweight: Bool?
+    let bodyweightInUnit: Double?
+    let notes: String?
+    let sets: [SeedSetDTO]
+
+    func toWorkoutExercise() -> WorkoutExercise {
+        let exercise = WorkoutExercise(
+            id: UUID(uuidString: id ?? "") ?? UUID(),
+            name: name,
+            category: category,
+            order: order,
+            notes: notes ?? "",
+            weightModeRawValue: ExerciseWeightMode(rawValue: weightMode ?? "")?.rawValue
+                ?? ExerciseWeightMode.standard.rawValue,
+            // Demo data is exported with `unit: KG`, so `bodyweightInUnit`
+            // is already in kilograms.
+            bodyweightKg: bodyweightInUnit,
+            includesBodyweight: includesBodyweight ?? false
+        )
+        exercise.sets = sets.map { $0.toWorkoutSet() }
+        return exercise
+    }
+}
+
+private struct SeedSetDTO: Decodable {
+    let index: Int
+    let setType: String?
+    let targetReps: Int?
+    let actualReps: Int?
+    let weight: Double?
+    let weightUnit: String?
+    let rpe: Int?
+    let restSeconds: Int?
+    let isCompleted: Bool?
+    let completedAt: Date?
+
+    func toWorkoutSet() -> WorkoutSet {
+        WorkoutSet(
+            index: index,
+            targetReps: targetReps,
+            actualReps: actualReps,
+            // Demo data is exported with `unit: KG`, so the weight values
+            // are already kilograms regardless of the user's display unit.
+            weightKg: weight ?? 0,
+            restAfter: 90,
+            recordedRestSeconds: restSeconds,
+            setTypeRawValue: SetType(rawValue: setType ?? "")?.rawValue ?? SetType.working.rawValue,
+            isCompleted: isCompleted ?? false,
+            completedAt: completedAt,
+            rpe: rpe
+        )
     }
 }

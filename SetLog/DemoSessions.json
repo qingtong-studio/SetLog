@@ -1,0 +1,3935 @@
+{
+  "exportedAt" : "2026-05-14T09:18:53Z",
+  "sessions" : [
+    {
+      "dateEnded" : "2026-04-24T04:54:18Z",
+      "dateStarted" : "2026-04-24T03:39:18Z",
+      "durationSeconds" : 4500,
+      "exercises" : [
+        {
+          "category" : "腿部",
+          "id" : "9EB361D2-78A3-4D4C-8F16-A5C3DF086F22",
+          "includesBodyweight" : false,
+          "name" : "深蹲",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-24T03:44:18Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-24T03:52:18Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 80,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-24T04:00:18Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-04-24T04:08:18Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "54A37B43-ABC1-4F49-A63C-EA336135ECC5",
+          "includesBodyweight" : false,
+          "name" : "腿举",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-24T04:22:18Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 160,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-24T04:30:18Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 180,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-24T04:38:18Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 180,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "D47FE6D0-AC4D-424E-8097-55A0932A333D",
+      "notes" : "深蹲状态不错，下次把第三组提升到 102.5kg。",
+      "templateName" : "硬核腿部轰炸",
+      "title" : "腿部日",
+      "totalSets" : 7,
+      "totalVolume" : 8800
+    },
+    {
+      "dateEnded" : "2026-04-27T11:22:02Z",
+      "dateStarted" : "2026-04-27T09:58:05Z",
+      "durationSeconds" : 5036,
+      "exercises" : [
+        {
+          "category" : "腿部",
+          "id" : "A95BC002-6936-47B6-9DF7-10B6D24DE0A3",
+          "includesBodyweight" : false,
+          "name" : "深蹲",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-27T10:00:08Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 12,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:01:41Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 10,
+              "weight" : 50,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 4,
+              "completedAt" : "2026-04-27T10:03:36Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 10,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 2,
+              "completedAt" : "2026-04-27T10:05:34Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 10,
+              "weight" : 90,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:08:27Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 240,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:13:23Z",
+              "index" : 6,
+              "isCompleted" : true,
+              "restSeconds" : 240,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:18:17Z",
+              "index" : 7,
+              "isCompleted" : true,
+              "restSeconds" : 240,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:23:14Z",
+              "index" : 8,
+              "isCompleted" : true,
+              "restSeconds" : 240,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-27T10:30:53Z",
+              "index" : 9,
+              "isCompleted" : true,
+              "restSeconds" : 240,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 100,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "CABBD17D-E13A-4ED2-90E0-597608D69346",
+          "includesBodyweight" : false,
+          "name" : "罗马尼亚硬拉",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-27T10:35:24Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 95,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-27T10:38:26Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 95,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-27T10:41:23Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 95,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "909D4C85-A6B0-423A-B46C-6289BE22EF88",
+          "includesBodyweight" : false,
+          "name" : "腿弯举",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-27T10:46:40Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-27T10:48:53Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-27T10:51:03Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-27T10:53:12Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "A2B6DA8D-A2CD-4646-8408-01344BE2E9FD",
+          "includesBodyweight" : false,
+          "name" : "腿伸",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T10:55:36Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T10:57:56Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:00:23Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "C5A1C8B6-342D-4F3C-A52C-9F0487DB3FCA",
+          "includesBodyweight" : false,
+          "name" : "站姿提踵",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:04:41Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:06:55Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:11:56Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:13:46Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "核心",
+          "id" : "6C833BB4-A802-4059-BEBF-3F216124E316",
+          "includesBodyweight" : false,
+          "name" : "负重卷腹",
+          "notes" : "",
+          "order" : 5,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:17:19Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:19:33Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-27T11:21:58Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "977D8B45-1C08-4AC7-B265-7AE469B4CB03",
+      "notes" : "",
+      "templateName" : "硬核腿部轰炸",
+      "title" : "腿部日",
+      "totalSets" : 26,
+      "totalVolume" : 13765
+    },
+    {
+      "dateEnded" : "2026-04-28T10:11:17Z",
+      "dateStarted" : "2026-04-28T08:38:47Z",
+      "durationSeconds" : 5550,
+      "exercises" : [
+        {
+          "category" : "胸部",
+          "id" : "33C34B43-1CE1-4190-876F-D7E7A7DB883F",
+          "includesBodyweight" : false,
+          "name" : "上斜杠铃卧推",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-28T09:06:28Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-28T09:08:59Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-28T09:11:34Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-28T09:14:01Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-28T09:16:37Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "胸部",
+          "id" : "DE43C70B-4149-4DF0-8C84-BCDB7B16AB02",
+          "includesBodyweight" : false,
+          "name" : "平板哑铃卧推",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-28T09:19:25Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 56,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-28T09:22:13Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 56,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-28T09:25:03Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 56,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 7,
+              "completedAt" : "2026-04-28T09:28:12Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 56,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "胸部",
+          "id" : "CABD6353-292C-4878-9A57-7730844333E4",
+          "includesBodyweight" : false,
+          "name" : "双杠臂屈伸（加重）",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-28T09:43:38Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-28T09:45:55Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 9,
+              "completedAt" : "2026-04-28T09:48:12Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "B3AEE189-88A4-4F4B-9A08-7306C8DADAE7",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-28T09:50:32Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 14,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-28T09:52:37Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 14,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-28T09:54:52Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 14,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-28T09:57:02Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 14,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "9CE6A42C-C01B-4B46-BA11-4E66AD804171",
+          "includesBodyweight" : false,
+          "name" : "锤式弯举",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-28T09:59:08Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 28,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-28T10:01:14Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 28,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-28T10:03:20Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 28,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "核心",
+          "id" : "6A0750E2-7B7E-4B66-95C0-1C986D4B23AF",
+          "includesBodyweight" : false,
+          "name" : "悬挂举腿",
+          "notes" : "",
+          "order" : 5,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-28T10:05:39Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-28T10:07:57Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-28T10:11:10Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "757F339D-3916-4FB6-9C63-6DADBE22B2A9",
+      "notes" : "",
+      "templateName" : "v4-周二·推（力量）",
+      "title" : "v4-周二·推（力量）",
+      "totalSets" : 22,
+      "totalVolume" : 8602
+    },
+    {
+      "dateEnded" : "2026-04-29T11:02:51Z",
+      "dateStarted" : "2026-04-29T09:49:44Z",
+      "durationSeconds" : 4387,
+      "exercises" : [
+        {
+          "category" : "背部",
+          "id" : "BF29A3F0-76C0-460D-8E31-D8208F23DCD8",
+          "includesBodyweight" : false,
+          "name" : "加重引体向上",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-29T10:06:36Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "setType" : "warmup",
+              "targetReps" : 6,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-29T10:08:37Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 140,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 30,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-29T10:11:32Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 190,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 30,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-29T10:15:27Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 25,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-04-29T10:19:17Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 25,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "BBD79CD4-1C48-4E4A-8FD6-90E99BF54303",
+          "includesBodyweight" : false,
+          "name" : "杠铃划船",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-29T10:24:59Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-29T10:27:49Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-29T10:30:47Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-29T10:33:34Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 75,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "5C19F00D-C7B0-45A7-912F-69701ED4D827",
+          "includesBodyweight" : false,
+          "name" : "宽握高位下拉",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-29T10:38:01Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 54,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-29T10:40:40Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 54,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-29T10:43:06Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 54,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "BB3888EA-5DC9-4971-99EB-9F1DE0ABA671",
+          "includesBodyweight" : false,
+          "name" : "面拉",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:45:43Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:47:51Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:50:12Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:52:37Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "核心",
+          "id" : "59B715B8-C13B-4D63-8B9C-FA336DCBC845",
+          "includesBodyweight" : false,
+          "name" : "绳索卷腹",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:55:04Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 21.25,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:57:26Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 23.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T10:59:58Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26.25,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-29T11:02:43Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26.25,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "6D598E34-A77A-48FA-A3C5-716F979995D0",
+      "notes" : "",
+      "templateName" : "v4-周三·拉",
+      "title" : "v4-周三·拉",
+      "totalSets" : 20,
+      "totalVolume" : 6557.5
+    },
+    {
+      "dateEnded" : "2026-04-30T11:04:04Z",
+      "dateStarted" : "2026-04-30T09:31:10Z",
+      "durationSeconds" : 5573,
+      "exercises" : [
+        {
+          "category" : "肩部",
+          "id" : "476ACA26-56A1-4675-803E-501D8174A758",
+          "includesBodyweight" : false,
+          "name" : "实力举OHP",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-04-30T10:17:41Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-04-30T10:20:18Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-04-30T10:22:58Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-04-30T10:25:41Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "EA1111A8-2F5A-4498-921E-110038ABC309",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:29:10Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 16,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:31:17Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 16,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:33:25Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 16,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:35:33Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 16,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:37:59Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 16,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "肩部",
+          "id" : "8AF02F42-A0E8-4CB0-BC03-728B3071D01C",
+          "includesBodyweight" : false,
+          "name" : "哑铃后束飞鸟",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:40:18Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:42:29Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-04-30T10:44:58Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "A0727076-E9C2-47C6-B9B4-78D552F870EE",
+          "includesBodyweight" : false,
+          "name" : "哑铃集中弯举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-30T10:47:20Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-30T10:49:42Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-30T10:51:58Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-04-30T10:54:22Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "5136C9E1-31C5-4790-AEBB-67984AE23AAE",
+          "includesBodyweight" : false,
+          "name" : "绳索下压",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-30T10:58:08Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-04-30T10:59:49Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-30T11:01:33Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-04-30T11:03:58Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "19E09B3A-C9F8-411D-859C-1067ADCF421E",
+      "notes" : "",
+      "templateName" : "v4-周四·手臂+肩",
+      "title" : "v4-周四·手臂+肩",
+      "totalSets" : 20,
+      "totalVolume" : 7060
+    },
+    {
+      "dateEnded" : "2026-05-01T11:35:35Z",
+      "dateStarted" : "2026-05-01T10:34:12Z",
+      "durationSeconds" : 3683,
+      "exercises" : [
+        {
+          "category" : "胸部",
+          "id" : "54805EA2-019C-41FA-A17B-9BDE40BDBED9",
+          "includesBodyweight" : false,
+          "name" : "上斜哑铃飞鸟",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-01T10:34:13Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-01T10:36:17Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-01T10:38:35Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "胸部",
+          "id" : "0CC31E6E-75F5-46C3-84B1-11A932C2069D",
+          "includesBodyweight" : false,
+          "name" : "绳索夹胸（中位）",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:41:43Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 22.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:43:59Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 22.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-01T10:46:40Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 22.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "胸部",
+          "id" : "3CA415BC-BBA2-476C-AC32-EA47B29482B5",
+          "includesBodyweight" : false,
+          "name" : "器械夹胸",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:04:32Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:07:06Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:10:01Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 70,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "FC1D52D0-18E8-4F02-8602-3401992DBFED",
+          "includesBodyweight" : false,
+          "name" : "绳索侧平举（单臂）",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:49:57Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 7.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:52:47Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:55:47Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 7.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T10:59:04Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 7.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "肩部",
+          "id" : "3978F2AF-D8CE-46DA-B204-31EF02DD7F95",
+          "includesBodyweight" : false,
+          "name" : "反向飞鸟（器械）",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:11:12Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:13:26Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:15:54Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "手臂",
+          "id" : "56D29258-BE95-4621-9B5E-2442494E4B49",
+          "includesBodyweight" : false,
+          "name" : "弹力带二头弯举",
+          "notes" : "",
+          "order" : 5,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:20:14Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 20,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:26:26Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:28:53Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "核心",
+          "id" : "A09B5E1A-5A08-49C0-8295-5927B244B799",
+          "includesBodyweight" : false,
+          "name" : "木桩转体 Pallof Press",
+          "notes" : "",
+          "order" : 6,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:22:12Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 17.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:24:30Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 17.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:30:56Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 17.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "核心",
+          "id" : "0BF657A5-64FD-486F-A1A3-CDFAD6629EBE",
+          "includesBodyweight" : false,
+          "name" : "悬挂举腿",
+          "notes" : "",
+          "order" : 7,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-01T11:33:24Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 4,
+              "completedAt" : "2026-05-01T11:35:35Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "45C065B7-1791-478F-9AF6-1F8C0A3A40A5",
+      "notes" : "",
+      "templateName" : "v4-周五·平衡调和",
+      "title" : "v4-周五·平衡调和",
+      "totalSets" : 25,
+      "totalVolume" : 9723
+    },
+    {
+      "dateEnded" : "2026-05-04T10:17:44Z",
+      "dateStarted" : "2026-05-04T09:16:13Z",
+      "durationSeconds" : 3691,
+      "exercises" : [
+        {
+          "category" : "腿部",
+          "id" : "0D12C139-2DD8-4124-A0FA-4ABF6B209CC4",
+          "includesBodyweight" : false,
+          "name" : "杠铃深蹲",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-04T09:45:47Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-04T09:47:54Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 50,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-04T09:49:38Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-04T09:51:47Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-04T09:54:06Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "71967CC6-6D28-4521-A134-73D2FF6E3AC2",
+          "includesBodyweight" : false,
+          "name" : "罗马尼亚硬拉",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-04T09:57:01Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-04T09:59:13Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "3880E934-7F9C-461B-94A5-C1CD2BD2FB9D",
+          "includesBodyweight" : false,
+          "name" : "器械腿屈伸",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-04T10:14:05Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 27.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-04T10:16:14Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 27.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "D7FBCDC1-3877-4509-9D6F-BC0CE4D83B3C",
+          "includesBodyweight" : false,
+          "name" : "史密斯机站姿提踵",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-04T10:04:13Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-04T10:06:14Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "B99A1A64-A5D6-4037-BFD8-8551875D0D13",
+      "notes" : "",
+      "templateName" : "v4-周一·腿",
+      "title" : "v4-周一·腿",
+      "totalSets" : 11,
+      "totalVolume" : 4240
+    },
+    {
+      "dateEnded" : "2026-05-05T10:16:13Z",
+      "dateStarted" : "2026-05-05T09:36:35Z",
+      "durationSeconds" : 2378,
+      "exercises" : [
+        {
+          "category" : "胸部",
+          "id" : "4ACDAB5A-85A8-4E89-A79F-4E1FCE47BEC8",
+          "includesBodyweight" : false,
+          "name" : "上斜杠铃卧推",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-05T09:55:01Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-05T09:57:14Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-05T09:58:39Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-05T10:00:16Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-05T10:01:47Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 42.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "胸部",
+          "id" : "AD283187-2D8A-461E-BDA5-DE72DBC10828",
+          "includesBodyweight" : false,
+          "name" : "平板哑铃卧推",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-05T10:04:14Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 18,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-05T10:05:59Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 18,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "bodyweightInUnit" : 65,
+          "category" : "胸部",
+          "id" : "3B78FBE3-3C5B-4839-915C-4EE56CADCD18",
+          "includesBodyweight" : true,
+          "name" : "双杠臂屈伸（加重）",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-05T10:08:28Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-05T10:10:11Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "EC93788A-F7B3-418D-842F-54311C76BE9C",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-05T10:11:12Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 64,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-05T10:13:00Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "7DD2296D-9E29-4DDE-BB58-1D5BCC4DA322",
+          "includesBodyweight" : false,
+          "name" : "锤式弯举",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-05T10:14:36Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-05T10:16:13Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        }
+      ],
+      "id" : "67B8432F-F1EA-4F3B-8991-ABA852F514EB",
+      "notes" : "",
+      "templateName" : "v4-周二·推（力量）",
+      "title" : "v4-周二·推（力量）",
+      "totalSets" : 13,
+      "totalVolume" : 3257.5
+    },
+    {
+      "dateEnded" : "2026-05-06T06:59:35Z",
+      "dateStarted" : "2026-05-06T04:36:36Z",
+      "durationSeconds" : 8578,
+      "exercises" : [
+        {
+          "bodyweightInUnit" : 65,
+          "category" : "背部",
+          "id" : "BE33422A-DB83-4022-A690-E3F48DB43460",
+          "includesBodyweight" : true,
+          "name" : "加重引体向上",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-06T06:37:17Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-06T06:38:40Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-06T06:40:08Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "08519BBD-632D-40B1-BA31-14E895D4BB6C",
+          "includesBodyweight" : false,
+          "name" : "杠铃划船",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-06T06:42:35Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 50,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-06T06:44:01Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 50,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-06T06:45:34Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 50,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "7B8DF1B4-8A6A-4D0F-90DC-10E83B9CE7A5",
+          "includesBodyweight" : false,
+          "name" : "宽握高位下拉",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-06T06:48:44Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 36,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-06T06:50:42Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 36,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "CFB595E2-4A9F-46E2-892E-F72458B05CAD",
+          "includesBodyweight" : false,
+          "name" : "面拉",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-06T06:57:00Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 67,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-06T06:59:32Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "6AC0B675-9BFA-4324-B5C3-C06429EE33D7",
+      "notes" : "",
+      "templateName" : "v4-周三·拉",
+      "title" : "v4-周三·拉",
+      "totalSets" : 10,
+      "totalVolume" : 3034
+    },
+    {
+      "dateEnded" : "2026-05-07T10:24:07Z",
+      "dateStarted" : "2026-05-07T09:53:48Z",
+      "durationSeconds" : 1818,
+      "exercises" : [
+        {
+          "category" : "肩部",
+          "id" : "B69E4D91-57DA-46E9-86D3-93695B9EF92E",
+          "includesBodyweight" : false,
+          "name" : "实力举OHP",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 20,
+              "completedAt" : "2026-05-07T09:56:05Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 6,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-07T09:57:43Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 30,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-07T09:59:24Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 30,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-07T10:01:29Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 30,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "8AC59DB6-B3B6-4738-A2BA-6BB8A6B4438C",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:03:27Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:05:03Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:06:09Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "肩部",
+          "id" : "8B7FDEB4-DF95-4F07-83A6-98021041A508",
+          "includesBodyweight" : false,
+          "name" : "哑铃后束飞鸟",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:09:38Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 4,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:12:50Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 5,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 4,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:15:00Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 4,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "手臂",
+          "id" : "35731B06-9FC5-4DB6-A7AC-A37728C99F42",
+          "includesBodyweight" : false,
+          "name" : "哑铃集中弯举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-07T10:11:07Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 9,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-07T10:12:56Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 0,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 9,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 9,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "0C7ED204-5C5E-426B-BF00-1AF7E143FB56",
+          "includesBodyweight" : false,
+          "name" : "绳索下压",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-07T10:19:00Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:24:04Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 2,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:22:17Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "rpe" : 6,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-07T10:24:07Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 0,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "AEDF887C-E429-42C9-91B4-4F3A4686F8E4",
+      "notes" : "",
+      "templateName" : "v4-周四·手臂+肩",
+      "title" : "v4-周四·手臂+肩",
+      "totalSets" : 17,
+      "totalVolume" : 2314
+    },
+    {
+      "dateEnded" : "2026-05-11T11:32:31Z",
+      "dateStarted" : "2026-05-11T10:09:31Z",
+      "durationSeconds" : 4980,
+      "exercises" : [
+        {
+          "category" : "腿部",
+          "id" : "56AB8338-5072-4D79-A901-65DF61C9CBC7",
+          "includesBodyweight" : false,
+          "name" : "杠铃深蹲",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-11T10:35:11Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-11T10:37:08Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 3,
+              "completedAt" : "2026-05-11T10:38:54Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 70,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 1,
+              "completedAt" : "2026-05-11T10:40:40Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 80,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 1,
+              "completedAt" : "2026-05-11T10:42:16Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 5,
+              "weight" : 90,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-11T10:44:45Z",
+              "index" : 6,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 92.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-11T10:48:36Z",
+              "index" : 7,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 92.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-11T10:52:59Z",
+              "index" : 8,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 92.5,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-11T11:02:07Z",
+              "index" : 9,
+              "isCompleted" : true,
+              "restSeconds" : 180,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 92.5,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "CE7DF210-EFDB-42EC-B5EF-0CC426F62332",
+          "includesBodyweight" : false,
+          "name" : "罗马尼亚硬拉",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-11T11:03:56Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 85,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-11T11:05:59Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 85,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-11T11:08:17Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 85,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "63FA800A-12A5-4BAA-A0EB-89E4A7B993EF",
+          "includesBodyweight" : false,
+          "name" : "腿弯举",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-11T11:20:31Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-11T11:22:53Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-11T11:25:17Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 12,
+              "completedAt" : "2026-05-11T11:27:42Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "2E399075-6847-4507-80A1-2BCCC50B0279",
+          "includesBodyweight" : false,
+          "name" : "器械腿屈伸",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-11T11:11:46Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-11T11:14:28Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-11T11:17:16Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 47,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "6B95B553-7A07-4633-8C51-F0CFC8B19F54",
+          "includesBodyweight" : false,
+          "name" : "史密斯机站姿提踵",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "腿部",
+          "id" : "FA712AF0-2C2F-4C2C-A1CB-A2AC2BD17507",
+          "includesBodyweight" : false,
+          "name" : "坐姿提踵机",
+          "notes" : "",
+          "order" : 5,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "核心",
+          "id" : "C1DB55FA-63B4-4197-84BD-FD36C76546C5",
+          "includesBodyweight" : false,
+          "name" : "负重卷腹",
+          "notes" : "",
+          "order" : 6,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 15,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "0F3434FF-D075-4369-88AB-383981821D16",
+      "notes" : "",
+      "templateName" : "v4-周一·腿",
+      "title" : "v4-周一·腿",
+      "totalSets" : 26,
+      "totalVolume" : 9101
+    },
+    {
+      "dateEnded" : "2026-05-12T11:22:31Z",
+      "dateStarted" : "2026-05-12T10:02:41Z",
+      "durationSeconds" : 4790,
+      "exercises" : [
+        {
+          "category" : "胸部",
+          "id" : "F099E7B9-2380-4099-826F-810C9391EEB7",
+          "includesBodyweight" : false,
+          "name" : "上斜杠铃卧推",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-12T10:34:31Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-12T10:36:57Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-12T10:38:56Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-12T10:41:03Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-12T10:43:12Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 5,
+              "weight" : 60,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "胸部",
+          "id" : "DF6FC412-34BB-449C-84BE-F9DAD48F062A",
+          "includesBodyweight" : false,
+          "name" : "平板哑铃卧推",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-12T10:46:13Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-12T10:48:18Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-12T10:50:29Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-12T10:53:26Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 24,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "bodyweightInUnit" : 65,
+          "category" : "胸部",
+          "id" : "42432EED-784E-4F1F-A019-6437EAD563AE",
+          "includesBodyweight" : true,
+          "name" : "双杠臂屈伸（加重）",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:16:54Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:19:06Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:21:28Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "3AC16D35-C66F-4184-8071-3627A6610FC4",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-12T10:57:16Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-12T11:00:02Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-12T11:02:09Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-12T11:04:14Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-12T11:06:23Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "C001098E-DD99-439A-9A3E-4F23004C5231",
+          "includesBodyweight" : false,
+          "name" : "锤式弯举",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:08:47Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:11:13Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-12T11:13:37Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "核心",
+          "id" : "0FC686DD-661A-40A8-85CD-E03E61D931CD",
+          "includesBodyweight" : false,
+          "name" : "悬挂举腿",
+          "notes" : "",
+          "order" : 5,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "95B2117F-CE47-4577-80AB-4CD97CC55419",
+      "notes" : "",
+      "templateName" : "v4-周二·推（力量）",
+      "title" : "v4-周二·推（力量）",
+      "totalSets" : 23,
+      "totalVolume" : 6618
+    },
+    {
+      "dateEnded" : "2026-05-13T12:18:24Z",
+      "dateStarted" : "2026-05-13T10:52:00Z",
+      "durationSeconds" : 5184,
+      "exercises" : [
+        {
+          "category" : "背部",
+          "id" : "49CD0F68-AFF1-4B61-AA90-12B52DB7D9CA",
+          "includesBodyweight" : false,
+          "name" : "加重引体向上",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-13T11:21:55Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 60,
+              "setType" : "warmup",
+              "targetReps" : 6,
+              "weight" : 0,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-13T11:23:55Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 6,
+              "completedAt" : "2026-05-13T11:27:02Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 5,
+              "completedAt" : "2026-05-13T11:29:41Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 4,
+              "completedAt" : "2026-05-13T11:34:00Z",
+              "index" : 5,
+              "isCompleted" : true,
+              "restSeconds" : 120,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 20,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "2EC78A29-81B4-4EFC-8216-A6C3CFCB64AE",
+          "includesBodyweight" : false,
+          "name" : "杠铃划船",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-13T11:42:58Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-13T11:45:03Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-13T11:47:16Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 8,
+              "completedAt" : "2026-05-13T11:49:44Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 8,
+              "weight" : 65,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "55069702-B8C8-4A19-A021-50FDC2CF1F0D",
+          "includesBodyweight" : false,
+          "name" : "宽握高位下拉",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-13T11:54:23Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 48,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-13T11:56:45Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 48,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 10,
+              "completedAt" : "2026-05-13T11:59:14Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 10,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 48,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "背部",
+          "id" : "FCF35FBC-95BA-4721-AA99-00DC77164DF5",
+          "includesBodyweight" : false,
+          "name" : "面拉",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:04:16Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:08:37Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:10:09Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 8,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:14:42Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8.75,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "核心",
+          "id" : "1817947A-74CE-40F4-905F-9A8543ABA2FD",
+          "includesBodyweight" : false,
+          "name" : "绳索卷腹",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:05:47Z",
+              "index" : 1,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 7,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 21.25,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:08:25Z",
+              "index" : 2,
+              "isCompleted" : true,
+              "restSeconds" : 11,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 23.75,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:12:32Z",
+              "index" : 3,
+              "isCompleted" : true,
+              "restSeconds" : 90,
+              "rpe" : 9,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 26.25,
+              "weightUnit" : "KG"
+            },
+            {
+              "actualReps" : 15,
+              "completedAt" : "2026-05-13T12:18:17Z",
+              "index" : 4,
+              "isCompleted" : true,
+              "restSeconds" : 0,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 28.75,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "72D94385-56BC-48FA-917F-AC5FBE214AF5",
+      "notes" : "",
+      "templateName" : "v4-周三·拉",
+      "title" : "v4-周三·拉",
+      "totalSets" : 20,
+      "totalVolume" : 5945
+    },
+    {
+      "dateEnded" : "2026-05-14T09:04:13Z",
+      "dateStarted" : "2026-05-14T09:02:32Z",
+      "durationSeconds" : 101,
+      "exercises" : [
+        {
+          "category" : "肩部",
+          "id" : "61D18DD2-C9B6-49FC-9F2A-E5DDF2BF05FE",
+          "includesBodyweight" : false,
+          "name" : "实力举OHP",
+          "notes" : "",
+          "order" : 0,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 4,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 6,
+              "weight" : 40,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "肩部",
+          "id" : "6E901F6E-3C84-4F5B-B28A-48B5CD6C560E",
+          "includesBodyweight" : false,
+          "name" : "哑铃侧平举",
+          "notes" : "",
+          "order" : 1,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 4,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 5,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 8,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "肩部",
+          "id" : "7FDAC42B-7F94-406A-BDC5-67CCBD0DB676",
+          "includesBodyweight" : false,
+          "name" : "哑铃后束飞鸟",
+          "notes" : "",
+          "order" : 2,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 15,
+              "weight" : 6,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        },
+        {
+          "category" : "手臂",
+          "id" : "B34EDD90-5929-45EE-B681-5C9A2CABBF74",
+          "includesBodyweight" : false,
+          "name" : "哑铃集中弯举",
+          "notes" : "",
+          "order" : 3,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 4,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 10,
+              "weight" : 12,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "singleHand"
+        },
+        {
+          "category" : "手臂",
+          "id" : "575248C9-4A14-4F17-9670-1CAEC2B35F69",
+          "includesBodyweight" : false,
+          "name" : "绳索下压",
+          "notes" : "",
+          "order" : 4,
+          "sets" : [
+            {
+              "index" : 1,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 2,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 3,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            },
+            {
+              "index" : 4,
+              "isCompleted" : false,
+              "setType" : "working",
+              "targetReps" : 12,
+              "weight" : 10,
+              "weightUnit" : "KG"
+            }
+          ],
+          "weightMode" : "standard"
+        }
+      ],
+      "id" : "50599AD7-9304-4D88-895F-7D9B9CB11793",
+      "notes" : "",
+      "templateName" : "v4-周四·手臂+肩",
+      "title" : "v4-周四·手臂+肩",
+      "totalSets" : 20,
+      "totalVolume" : 0
+    }
+  ],
+  "totalSessions" : 14,
+  "totalVolume" : 89017,
+  "unit" : "KG"
+}

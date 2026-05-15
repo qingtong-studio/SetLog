@@ -92,7 +92,6 @@ struct CurrentWorkoutView: View {
             scrollContent
             bottomOverlay
         }
-        .background(WindowKeyboardDismiss())
         .environment(\.showToast, presentToast)
         .animation(.easeOut(duration: 0.24), value: workout.hasActiveRest)
         .animation(WorkoutAnimation.summaryFade, value: summaryDisplayMode != nil)
@@ -212,7 +211,6 @@ struct CurrentWorkoutView: View {
             onDragEnded: { endDrag(in: exercises) },
             onUpdateRPE: { updateRPE(for: $0, value: $1) },
             isCurrent: exercise.id == currentExerciseID,
-            lastSummary: lastSetSummary(forExerciseNamed: exercise.name),
             savedBodyweightKg: preferences.first?.bodyweightKg
         )
     }
@@ -1074,28 +1072,6 @@ struct CurrentWorkoutView: View {
         }
     }
 
-    // MARK: - History lookup
-
-    private func lastSetSummary(forExerciseNamed name: String) -> String? {
-        let descriptor = FetchDescriptor<WorkoutExercise>(predicate: #Predicate { $0.name == name })
-        guard let exercises = try? modelContext.fetch(descriptor) else { return nil }
-        let excludeID = workout.id
-        let mostRecent = exercises
-            .filter { $0.session?.id != excludeID }
-            .flatMap { $0.sets ?? [] }
-            .filter { $0.isCompleted && !$0.isWarmup && $0.weightKg > 0 }
-            .max { lhs, rhs in setSortDate(lhs) < setSortDate(rhs) }
-        guard let mostRecent else { return nil }
-
-        let reps = mostRecent.actualReps ?? mostRecent.targetReps ?? 0
-        let weightStr = mostRecent.weightKg.formattedWeight(unit: weightUnit)
-        let unit = weightUnit.displaySymbol.lowercased()
-        return "\(weightStr)\(unit) × \(reps)"
-    }
-
-    private func setSortDate(_ set: WorkoutSet) -> Date {
-        set.completedAt ?? set.exercise?.session?.dateStarted ?? .distantPast
-    }
 }
 
 // MARK: - Floating card style
@@ -1177,7 +1153,6 @@ struct ExerciseEditorCard: View {
     var onUpdateRPE: (WorkoutSet, Int?) -> Void = { _, _ in }
     var forceEditableRest: Bool = false
     var isCurrent: Bool = false
-    var lastSummary: String? = nil
     /// User-level saved bodyweight (from AppPreferences). When the exercise
     /// hasn't been given an explicit bodyweight yet, tapping the pill applies
     /// this value directly instead of prompting.
@@ -1293,15 +1268,13 @@ struct ExerciseEditorCard: View {
 
     @ViewBuilder
     private var actionRow: some View {
-        if !isCollapsed || lastSummary != nil {
+        if !isCollapsed {
             HStack(alignment: .center, spacing: 8) {
-                if !isCollapsed {
-                    bodyweightPill
-                    weightModePill
-                    warmupPill
-                }
+                bodyweightPill
+                weightModePill
+                warmupPill
             }
-            .frame(height: isCollapsed ? 16 : 26)
+            .frame(height: 26)
         }
     }
 
@@ -2064,86 +2037,6 @@ private struct SelectAllTextField: UIViewRepresentable {
 private final class HiddenCaretTextField: UITextField {
     override func selectionRects(for range: UITextRange) -> [UITextSelectionRect] { [] }
     override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool { false }
-}
-
-// Attach a window-level tap recognizer that dismisses the keyboard on any tap
-// outside a text field. cancelsTouchesInView=false keeps button/textfield taps working.
-private struct WindowKeyboardDismiss: UIViewRepresentable {
-    func makeCoordinator() -> Coordinator { Coordinator() }
-
-    func makeUIView(context: Context) -> HostView {
-        let v = HostView()
-        v.coordinator = context.coordinator
-        v.isUserInteractionEnabled = false
-        v.backgroundColor = .clear
-        return v
-    }
-
-    func updateUIView(_ uiView: HostView, context: Context) {}
-
-    static func dismantleUIView(_ uiView: HostView, coordinator: Coordinator) {
-        coordinator.detach()
-    }
-
-    final class Coordinator: NSObject, UIGestureRecognizerDelegate {
-        private weak var gesture: UITapGestureRecognizer?
-        private weak var attachedWindow: UIWindow?
-
-        func attach(to window: UIWindow) {
-            if gesture != nil && attachedWindow === window { return }
-            detach()
-            let tap = UITapGestureRecognizer(target: self, action: #selector(handleTap(_:)))
-            tap.cancelsTouchesInView = false
-            tap.delegate = self
-            window.addGestureRecognizer(tap)
-            gesture = tap
-            attachedWindow = window
-        }
-
-        func detach() {
-            if let g = gesture, let w = attachedWindow {
-                w.removeGestureRecognizer(g)
-            }
-            gesture = nil
-            attachedWindow = nil
-        }
-
-        @objc private func handleTap(_ gesture: UITapGestureRecognizer) {
-            guard let view = gesture.view else { return }
-            let location = gesture.location(in: view)
-            if let hit = view.hitTest(location, with: nil) {
-                var current: UIView? = hit
-                while let v = current {
-                    if v is UITextField || v is UITextView { return }
-                    current = v.superview
-                }
-            }
-            UIApplication.shared.sendAction(
-                #selector(UIResponder.resignFirstResponder),
-                to: nil, from: nil, for: nil
-            )
-        }
-
-        func gestureRecognizer(
-            _ gestureRecognizer: UIGestureRecognizer,
-            shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
-        ) -> Bool {
-            true
-        }
-    }
-
-    final class HostView: UIView {
-        weak var coordinator: Coordinator?
-
-        override func didMoveToWindow() {
-            super.didMoveToWindow()
-            if let window = self.window {
-                coordinator?.attach(to: window)
-            } else {
-                coordinator?.detach()
-            }
-        }
-    }
 }
 
 private struct AddPlaceholderCell: View {
